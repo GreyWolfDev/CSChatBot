@@ -7,6 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 using DB.Models;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using User = DB.Models.User;
 
 namespace DB.Extensions
 {
@@ -150,5 +153,38 @@ namespace DB.Extensions
             // Use Dapper to execute the given query
             db.Connection.Execute(commandText, param);
         }
+
+        #region Helpers
+        public static DB.Models.User GetTarget(this Message message, string args, User sourceUser, Instance db)
+        {
+            if (String.IsNullOrWhiteSpace(args))
+                return sourceUser;
+            //check for a user mention
+            var mention = message?.Entities.FirstOrDefault(x => x.Type == MessageEntityType.Mention);
+            var textmention = message?.Entities.FirstOrDefault(x => x.Type == MessageEntityType.TextMention);
+            var id = 0;
+            var username = "";
+            if (mention != null)
+                username = message.Text.Substring(mention.Offset + 1, mention.Length - 1);
+            else if (textmention != null)
+            {
+                id = textmention.User.Id;
+            }
+            User result = null;
+            if (!String.IsNullOrEmpty(username))
+                result = db.Users.FirstOrDefault(
+                    x =>
+                        String.Equals(x.UserName, username,
+                            StringComparison.InvariantCultureIgnoreCase));
+            else if (id != 0)
+                result = db.Users.FirstOrDefault(x => x.UserId == id);
+            else
+                result = db.Users.FirstOrDefault(
+                        x =>
+                            String.Equals(x.UserId.ToString(), args, StringComparison.InvariantCultureIgnoreCase) ||
+                            String.Equals(x.UserName, args.Replace("@", ""), StringComparison.InvariantCultureIgnoreCase));
+            return result ?? sourceUser;
+        }
+        #endregion
     }
 }

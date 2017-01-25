@@ -16,7 +16,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace CSChatBot
 {
-    
+
     class Telegram
     {
         private static Log Log = new Log(Program.RootDirectory);
@@ -51,7 +51,7 @@ namespace CSChatBot
             {
                 var update = updateEventArgs.Update;
 
-                if (!(update.Message.Date.AddHours(-5) > DateTime.Now.AddMinutes(-1)))
+                if (!(update.Message.Date > DateTime.UtcNow.AddSeconds(-15)))
                 {
                     //Log.WriteLine("Ignoring message due to old age: " + update.Message.Date);
                     return;
@@ -77,7 +77,7 @@ namespace CSChatBot
             if (update.Message.Type == MessageType.TextMessage)
             {
                 //TODO: do something with this update
-                var msg = update.Message.From.Username??update.Message.From.FirstName + ": " + update.Message.Text;
+                var msg = (update.Message.From.Username ?? update.Message.From.FirstName) + ": " + update.Message.Text;
                 var chat = update.Message.Chat.Title;
                 if (String.IsNullOrWhiteSpace(chat))
                     chat = "Private Message";
@@ -93,8 +93,47 @@ namespace CSChatBot
                     var args = GetParameters(update.Message.Text);
                     foreach (var command in Loader.Commands)
                     {
-                        if (command.Key.Contains(args[0]))
+                        if (command.Key.Triggers.Contains(args[0]))
                         {
+                            //check for access
+                            var att = command.Key;
+                            if (att.DevOnly && update.Message.From.Id != Program.LoadedSetting.TelegramDefaultAdminUserId)
+                            {
+
+                                Send(new CommandResponse("You are not the developer!"), update);
+                                return;
+
+                            }
+                            if (att.BotAdminOnly & !user.IsBotAdmin)
+                            {
+                                Send(new CommandResponse("You are not a bot admin!"), update);
+                                return;
+                            }
+                            if (att.GroupAdminOnly)
+                            {
+                                if (update.Message.Chat.Type == ChatType.Private)
+                                {
+                                    Send(new CommandResponse("You need to run this in a group"), update);
+                                    return;
+                                }
+                                //is the user an admin of the group?
+                                var status = Bot.GetChatMemberAsync(update.Message.Chat.Id, update.Message.From.Id).Result.Status;
+                                if (status != ChatMemberStatus.Administrator && status != ChatMemberStatus.Creator)
+                                {
+                                    Send(new CommandResponse("You are not a group admin!"), update);
+                                    return;
+                                }
+                            }
+                            if (att.InGroupOnly && update.Message.Chat.Type == ChatType.Private)
+                            {
+                                Send(new CommandResponse("You need to run this in a group"), update);
+                                return;
+                            }
+                            if (att.InPrivateOnly)
+                            {
+                                Send(new CommandResponse("You need to run this in private"), update);
+                                return;
+                            }
                             var eArgs = new CommandEventArgs
                             {
                                 SourceUser = user,
@@ -102,11 +141,12 @@ namespace CSChatBot
                                 Parameters = args[1],
                                 Target = update.Message.Chat.Id.ToString(),
                                 Messenger = Program.Messenger,
-                                Bot = Bot
+                                Bot = Bot,
+                                Message = update.Message
                             };
                             var response = command.Value.Invoke(eArgs);
                             if (!String.IsNullOrWhiteSpace(response.Text))
-                                Send(response.Text, update);
+                                Send(response, update);
                         }
                     }
                 }
@@ -120,41 +160,25 @@ namespace CSChatBot
 
         public static void Send(CommandResponse response, Update update)
         {
-            
-        }
-
-        public static void Send(string text, Update update)
-        {
+            var text = response.Text;
             Program.Log.WriteLine("Replying: " + text, overrideColor: ConsoleColor.Yellow);
-            //text = text.Replace("\n", "").Replace("\r", "");
-            //Console.ForegroundColor = ConsoleColor.DarkYellow;
-            //text = text.Replace(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*",
-            //    "I'm not gonna say that!!");
             try
             {
-                //if (Quiet)
-                //    return;
-                //var color = "|7|";
                 if (text.StartsWith("/me"))
                 {
                     text = text.Replace("/me", "*") + "*";
                 }
-                if (text.StartsWith("/"))
-                {
-                    text = text.Substring(1);
-
-                }
-                Bot.SendTextMessageAsync(update.Message.Chat.Id, text);
+                long targetId = response.Level == ResponseLevel.Public ? update.Message.Chat.Id : update.Message.From.Id;
+                Bot.SendTextMessageAsync(targetId, text, replyMarkup: response.Markup, parseMode: response.ParseMode);
                 //Bot.SendTextMessage(update.Message.Chat.Id, text);
                 return;
             }
             catch (Exception e)
             {
-                //Logging.Write("Server error! restarting..");
-                //Process.Start("csircbot.exe");
-                //Environment.Exit(7);
+
             }
         }
+
 
         public static void Send(MessageSentEventArgs args)
         {

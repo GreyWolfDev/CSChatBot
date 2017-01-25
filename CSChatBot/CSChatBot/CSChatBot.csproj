@@ -12,6 +12,8 @@
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -73,13 +75,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helpers\UserHelper.cs" />
+    <Compile Include="Modules\Admin.cs" />
+    <Compile Include="Modules\Base.cs" />
     <Compile Include="Modules\Loader.cs" />
     <Compile Include="Modules\TestModule.cs" />
+    <Compile Include="Modules\UserFunctions.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Telegram.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Addon Modules\Resources\fw.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Addon Modules\WeatherModule.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
@@ -97,11 +108,6 @@
       <Project>{936a8668-df10-4add-8790-4e7c46ea81d5}</Project>
       <Name>ModuleFramework</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Addon Modules\WeatherModule.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

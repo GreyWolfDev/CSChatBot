@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DB;
-using DB.Models;
 using Telegram.Bot;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using User = DB.Models.User;
 
 namespace ModuleFramework
 {
@@ -89,6 +90,7 @@ namespace ModuleFramework
         public string Target { get; set; } //groupid, userid
         public ModuleMessenger Messenger { get; set; }
         public TelegramBotClient Bot { get; set; }
+        public Message Message { get; set; }
     }
 
     public delegate void MessageSentEventHandler(object sender, MessageSentEventArgs e);

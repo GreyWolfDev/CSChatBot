@@ -8,6 +8,7 @@ using DB.Models;
 using DB.Extensions;
 using ModuleFramework;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace CSChatBot.Helpers
 {
@@ -20,7 +21,8 @@ namespace CSChatBot.Helpers
                 FirstSeen = DateTime.Now,
                 Points = 0,
                 Debt = 0,
-                IsBotAdmin = Program.LoadedSetting.TelegramDefaultAdminUserId == update.Message.From.Id
+                IsBotAdmin = Program.LoadedSetting.TelegramDefaultAdminUserId == update.Message.From.Id,
+                UserId = update.Message.From.Id
             };
             u.UserName = update.Message.From.Username;
             u.Name = (update.Message.From.FirstName + " " + update.Message.From.LastName).Trim();
@@ -56,12 +58,7 @@ namespace CSChatBot.Helpers
 
         public static DB.Models.User GetTarget(CommandEventArgs args)
         {
-            if (String.IsNullOrWhiteSpace(args.Parameters))
-                return args.SourceUser;
-            return args.DatabaseInstance.Users.FirstOrDefault(
-                        x =>
-                            String.Equals(x.UserName, args.Parameters.Replace("@", ""), StringComparison.InvariantCultureIgnoreCase) ||
-                            String.Equals(x.UserId.ToString(), args.Parameters, StringComparison.InvariantCultureIgnoreCase));
+            return args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
         }
 
         //public static DB.Models.User MergeUsers(Instance db, DB.Models.User ircUser, DB.Models.User telegramUser)

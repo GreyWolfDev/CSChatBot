@@ -6,11 +6,14 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Xml;
+using System.Xml.Linq;
 using DB;
 using DB.Extensions;
 using DB.Models;
 using ModuleFramework;
 using Newtonsoft.Json;
+using Telegram.Bot.Types.Enums;
+
 // ReSharper disable InconsistentNaming
 
 namespace WeatherModule
@@ -43,53 +46,38 @@ namespace WeatherModule
         [ChatCommand(Triggers = new[] { "w", "weather" })]
         public static CommandResponse GetWeather(CommandEventArgs args)
         {
-            var loc = args.Parameters;
-            if (String.IsNullOrEmpty(loc))
-            {
-                return new CommandResponse(String.IsNullOrEmpty(args.SourceUser.Location) ? "Please use !setloc <location> to set your default location, or enter a location as a parameter" : GetWeather(args.SourceUser.Location));
-            }
-
-            var otherUser =
-                args.DatabaseInstance.Users.FirstOrDefault(
-                    x =>
-                        String.Equals(x.UserName, loc, StringComparison.InvariantCultureIgnoreCase) ||
-                        String.Equals(x.Name, loc, StringComparison.InvariantCultureIgnoreCase));
-
-            var weather = GetWeather(otherUser != null ? otherUser.Location : loc);
-
-            return new CommandResponse(!String.IsNullOrEmpty(weather) ? weather : $"Could not find weather for {loc}");
-
+            return GetResponse(args, false);
         }
 
         [ChatCommand(Triggers = new[] { "fw" })]
         public static CommandResponse GetFknWeather(CommandEventArgs args)
         {
+            return GetResponse(args, true);
+        }
+
+        private static CommandResponse GetResponse(CommandEventArgs args, bool fknweather)
+        {
             var loc = args.Parameters;
             if (String.IsNullOrEmpty(loc))
             {
-                return new CommandResponse(String.IsNullOrEmpty(args.SourceUser.Location) ? "Please use !setloc <location> to set your default location, or enter a location as a parameter" : GetFknWeather(args.SourceUser.Location));
+                return new CommandResponse(String.IsNullOrEmpty(args.SourceUser.Location) ? "Please use !setloc <location> to set your default location, or enter a location as a parameter" : GetWeather(args.SourceUser.Location), parseMode: ParseMode.Markdown);
             }
-            else
-            {
-                var otherUser =
-                args.DatabaseInstance.Users.FirstOrDefault(
-                    x =>
-                        String.Equals(x.UserName, loc, StringComparison.InvariantCultureIgnoreCase) ||
-                        String.Equals(x.Name, loc, StringComparison.InvariantCultureIgnoreCase));
+            var target = args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
+            var location = target == args.SourceUser ? loc : target.Location;
+            var weather = fknweather?GetFknWeather(location): GetWeather(location);
 
-                var weather = GetFknWeather(otherUser != null ? otherUser.Location : loc);
-
-                return new CommandResponse(!String.IsNullOrEmpty(weather) ? weather : $"Could not find weather for {loc}");
-            }
+            return new CommandResponse(!String.IsNullOrEmpty(weather) ? weather : $"Could not find weather for {loc}", parseMode: ParseMode.Markdown);
         }
+
+        
 
         public static string GetWeather(string location)
         {
             var c = Parse($"http://api.wunderground.com/api/{ApiKey}/conditions/pws:1/q/{location}.xml");
             if (!String.IsNullOrEmpty(c.place))
             {
-                
-                return (" Conditions for " + c.place + ": " + $"{c.weather1} {c.temperature_string}\nForecast: {ParseForecast($"http://api.wunderground.com/api/{ApiKey}/forecast/pws:1/q/{location}.xml")}");
+
+                return ($" Conditions for {c.place}:\n{c.weather1} {c.temperature_string}\nForecast:\n{ParseForecast($"http://api.wunderground.com/api/{ApiKey}/forecast/pws:1/q/{location}.xml")}");
             }
             return null;
         }
@@ -101,8 +89,8 @@ namespace WeatherModule
             var c = Parse($"http://api.wunderground.com/api/{ApiKey}/conditions/pws:1/q/{location}.xml");
             if (!String.IsNullOrEmpty(c.place))
             {
-                
-                var result = $"Conditions for {c.place}: {c.weather1} {c.temperature_string}\n";
+
+                var result = $"Conditions for {c.place}:\n{c.weather1} {c.temperature_string}\n";
                 //now the tricky bits.
                 var tempF = float.Parse(c.temperature_string.Substring(0, c.temperature_string.IndexOf("F", StringComparison.Ordinal)).Trim());
                 var tempC = 5.0 / 9.0 * (tempF - 32);
@@ -183,30 +171,43 @@ namespace WeatherModule
 
         }
 
-        public static string ParseForecast(string inputXml)
+        public static string ParseForecast(string input_xml)
         {
-            var cli = new WebClient {Encoding = Encoding.UTF8};
-            byte[] data = Encoding.Default.GetBytes(cli.DownloadString(inputXml));
-            string weather = Encoding.UTF8.GetString(data);
-
-
-            using (XmlReader reader = XmlReader.Create(new StringReader(weather)))
+            try
             {
-                while (reader.Read())
+                var cli = new WebClient();
+                cli.Encoding = System.Text.Encoding.UTF8;
+                byte[] data = Encoding.Default.GetBytes(cli.DownloadString(input_xml));
+                string weather = Encoding.UTF8.GetString(data);
+
+
+                var doc = XDocument.Load(cli.OpenRead(input_xml));
+                var forecast = doc.Descendants("txt_forecast").Descendants("forecastday");
+                var reply = "";
+                for (int i = 0; i < 4; i++)
                 {
-                    switch (reader.NodeType)
+                    var day = forecast.ElementAt(i);
+                    if (day.Descendants().FirstOrDefault(x => x.Name == "period").Value == "0")
                     {
-                        case XmlNodeType.Element:
-                            if (reader.Name.Equals("fcttext"))
-                            {
-                                reader.Read();
-                                return reader.Value;
-                            }
-                            break;
+                        //night or day?
+                        if (day.Descendants().FirstOrDefault(x => x.Name == "title").Value.Contains("Night"))
+                            reply += "*Tonight*: ";
+                        else
+                            reply += "*Today*: ";
                     }
+                    else
+                    {
+                        reply += $"*{day.Descendants().FirstOrDefault(x => x.Name == "title").Value}*: ";
+                    }
+
+                    reply += day.Descendants().FirstOrDefault(x => x.Name == "fcttext").Value + "\n";
                 }
+                return reply;
             }
-            return "Unable to load forecast";
+            catch
+            {
+                return "Unable to load forecast";
+            }
         }
 
         public static Conditions Parse(string inputXml)
@@ -214,7 +215,7 @@ namespace WeatherModule
             //Variables
             var c = new Conditions();
 
-            var cli = new WebClient {Encoding = Encoding.UTF8};
+            var cli = new WebClient { Encoding = Encoding.UTF8 };
             byte[] data = Encoding.Default.GetBytes(cli.DownloadString(inputXml));
             string weather = Encoding.UTF8.GetString(data);
 

@@ -16,7 +16,7 @@ namespace CSChatBot.Modules
     {
         internal delegate CommandResponse ChatCommandMethod(CommandEventArgs args);
 
-        internal static Dictionary<string[], ChatCommandMethod> Commands = new Dictionary<string[], ChatCommandMethod>();
+        internal static Dictionary<ChatCommand, ChatCommandMethod> Commands = new Dictionary<ChatCommand, ChatCommandMethod>();
 
         internal static Dictionary<Module, Type> Modules = new Dictionary<Module, Type>();
         internal static void LoadModules()
@@ -45,7 +45,7 @@ namespace CSChatBot.Modules
                 foreach (var method in type.GetMethods().Where(x => x.IsDefined(typeof(ChatCommand))))
                 {
                     var att = method.GetCustomAttributes<ChatCommand>().First();
-                    Commands.Add(att.Triggers, (ChatCommandMethod)Delegate.CreateDelegate(typeof(ChatCommandMethod), method));
+                    Commands.Add(att, (ChatCommandMethod)Delegate.CreateDelegate(typeof(ChatCommandMethod), method));
                     Program.Log.WriteLine($"Loaded ChatCommand {method.Name}\n\t Trigger(s): {att.Triggers.Aggregate((a, b) => a + ", " + b)}", overrideColor: ConsoleColor.Green);
                 }
                 var constructor = type.GetConstructor(new[] { typeof(Instance), typeof(Setting) });
