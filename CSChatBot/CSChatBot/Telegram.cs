@@ -21,15 +21,15 @@ namespace CSChatBot
     {
         private static Log Log = new Log(Program.RootDirectory);
         public static TelegramBotClient Bot;
-
+        internal static User Me = null;
         public static async Task<bool> Run()
         {
             Bot = new TelegramBotClient(Program.LoadedSetting.TelegramBotAPIKey);
             await Bot.SetWebhookAsync();
-            User me = null;
+            
             try
             {
-                me = Bot.GetMeAsync().Result;
+                Me = Bot.GetMeAsync().Result;
             }
             catch (Exception e)
             {
@@ -41,7 +41,7 @@ namespace CSChatBot
             //Bot.MessageReceived += BotOnMessageReceived;
             Bot.OnUpdate += BotOnUpdateReceived;
             Bot.StartReceiving();
-            Log.WriteLine("Connected to Telegram and listening: " + me.Username);
+            Log.WriteLine("Connected to Telegram and listening: " + Me.Username);
             return true;
         }
 
@@ -155,7 +155,9 @@ namespace CSChatBot
 
         private static string[] GetParameters(string input)
         {
-            return input.Contains(" ") ? new string[] { input.Substring(1, input.IndexOf(" ")).Trim(), input.Substring(input.IndexOf(" ") + 1) } : new string[] { input.Substring(1).Trim(), null };
+            var result = input.Contains(" ") ? new string[] { input.Substring(1, input.IndexOf(" ")).Trim(), input.Substring(input.IndexOf(" ") + 1) } : new string[] { input.Substring(1).Trim(), null };
+            result[0] = result[0].Replace("@" + Me.Username, "");
+            return result;
         }
 
         public static void Send(CommandResponse response, Update update)

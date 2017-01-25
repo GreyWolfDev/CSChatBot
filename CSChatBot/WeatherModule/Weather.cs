@@ -60,7 +60,7 @@ namespace WeatherModule
             var loc = args.Parameters;
             if (String.IsNullOrEmpty(loc))
             {
-                return new CommandResponse(String.IsNullOrEmpty(args.SourceUser.Location) ? "Please use !setloc <location> to set your default location, or enter a location as a parameter" : GetWeather(args.SourceUser.Location), parseMode: ParseMode.Markdown);
+                return new CommandResponse(String.IsNullOrEmpty(args.SourceUser.Location) ? "Please use !setloc <location> to set your default location, or enter a location as a parameter" : (fknweather?GetFknWeather(args.SourceUser.Location):GetWeather(args.SourceUser.Location)), parseMode: ParseMode.Markdown);
             }
             var target = args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
             var location = target == args.SourceUser ? loc : target.Location;
