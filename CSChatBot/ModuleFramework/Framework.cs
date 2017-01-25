@@ -5,6 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using DB;
 using DB.Models;
+using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace ModuleFramework
 {
@@ -43,6 +46,10 @@ namespace ModuleFramework
         /// Command can only be used in Private (private info, or LARGE messages / spam
         /// </summary>
         public bool InPrivateOnly { get; set; } = false;
+        /// <summary>
+        /// Sets the help text for this command
+        /// </summary>
+        public string HelpText { get; set; }
     }
 
     public class CommandResponse
@@ -50,16 +57,27 @@ namespace ModuleFramework
         /// <summary>
         /// The text to send
         /// </summary>
-        public string Text;
+        public string Text { get; set; }
         /// <summary>
         /// Where to reply.  Private = in PM, Public = The chat the message is from
         /// </summary>
-        public ResponseLevel Level;
+        public ResponseLevel Level { get; set; }
+        public ReplyMarkup Markup { get; set; }
+        public ParseMode ParseMode { get; set; }
+        /// <summary>
+        /// Sends a response through the bot
+        /// </summary>
+        /// <param name="msg">The text to send</param>
+        /// <param name="level">Where to reply.  Private = in PM, Public = The chat the message is from</param>
+        /// <param name="replyMarkup">Reply markup.  Optional</param>
+        /// <param name="parseMode">How the text should be parsed</param>
 
-        public CommandResponse(string msg, ResponseLevel level = ResponseLevel.Public)
+        public CommandResponse(string msg, ResponseLevel level = ResponseLevel.Public, ReplyMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Default)
         {
             Text = msg;
             Level = level;
+            Markup = replyMarkup;
+            ParseMode = parseMode;
         }
     }
 
@@ -68,8 +86,9 @@ namespace ModuleFramework
         public Instance DatabaseInstance { get; set; }
         public User SourceUser { get; set; }
         public string Parameters { get; set; }
-        public string Target { get; set; } //channel, groupid, userid, usernick
+        public string Target { get; set; } //groupid, userid
         public ModuleMessenger Messenger { get; set; }
+        public TelegramBotClient Bot { get; set; }
     }
 
     public delegate void MessageSentEventHandler(object sender, MessageSentEventArgs e);

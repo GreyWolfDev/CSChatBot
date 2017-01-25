@@ -102,7 +102,7 @@ namespace CSChatBot
         private static void MessengerOnMessageSent(object sender, EventArgs e)
         {
             var args = (e as MessageSentEventArgs);
-            Telegram.Send(args.Target, args.Response.Text);
+            Telegram.Send(args);
         }
 
         private static void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)

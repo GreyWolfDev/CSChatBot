@@ -101,7 +101,8 @@ namespace CSChatBot
                                 DatabaseInstance = Program.DB,
                                 Parameters = args[1],
                                 Target = update.Message.Chat.Id.ToString(),
-                                Messenger = Program.Messenger
+                                Messenger = Program.Messenger,
+                                Bot = Bot
                             };
                             var response = command.Value.Invoke(eArgs);
                             if (!String.IsNullOrWhiteSpace(response.Text))
@@ -115,6 +116,11 @@ namespace CSChatBot
         private static string[] GetParameters(string input)
         {
             return input.Contains(" ") ? new string[] { input.Substring(1, input.IndexOf(" ")).Trim(), input.Substring(input.IndexOf(" ") + 1) } : new string[] { input.Substring(1).Trim(), null };
+        }
+
+        public static void Send(CommandResponse response, Update update)
+        {
+            
         }
 
         public static void Send(string text, Update update)
@@ -150,18 +156,12 @@ namespace CSChatBot
             }
         }
 
-        public static void Send(string target, string text)
+        public static void Send(MessageSentEventArgs args)
         {
-            Program.Log.WriteLine("Replying: " + text, overrideColor: ConsoleColor.Yellow);
-            //text = text.Replace("\n", "").Replace("\r", "");
-            //Console.ForegroundColor = ConsoleColor.DarkYellow;
-            //text = text.Replace(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*",
-            //    "I'm not gonna say that!!");
+            Program.Log.WriteLine("Replying: " + args.Response.Text, overrideColor: ConsoleColor.Yellow);
+            var text = args.Response.Text;
             try
             {
-                //if (Quiet)
-                //    return;
-                //var color = "|7|";
                 if (text.StartsWith("/me"))
                 {
                     text = text.Replace("/me", "*") + "*";
@@ -172,8 +172,8 @@ namespace CSChatBot
 
                 }
                 long targetId = 0;
-                if (long.TryParse(target, out targetId))
-                    Bot.SendTextMessageAsync(targetId, text);
+                if (long.TryParse(args.Target, out targetId))
+                    Bot.SendTextMessageAsync(targetId, text, replyMarkup: args.Response.Markup, parseMode: args.Response.ParseMode);
                 //Bot.SendTextMessage(update.Message.Chat.Id, text);
                 return;
             }
