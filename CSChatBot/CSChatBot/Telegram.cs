@@ -27,10 +27,14 @@ namespace CSChatBot
         public static async Task<bool> Run()
         {
             Bot = new TelegramBotClient(Program.LoadedSetting.TelegramBotAPIKey);
-            await Bot.SetWebhookAsync();
-
             try
             {
+                //Load in the modules
+                Loader.LoadModules();
+
+                await Bot.SetWebhookAsync();
+
+
                 Me = Bot.GetMeAsync().Result;
             }
             catch (Exception e)
@@ -77,8 +81,8 @@ namespace CSChatBot
             Log.WriteLine(user.Name + ": " + query.Query, LogLevel.Info, ConsoleColor.White, "telegram.log");
             var com = GetParameters("/" + query.Query);
             var choices =
-                Loader.Commands.Where(x => x.Key.DevOnly != true && x.Key.BotAdminOnly != true && x.Key.GroupAdminOnly != true & !x.Key.HideFromInline & !x.Key.DontSearchInline && 
-                x.Key.Triggers.Any(t => t.ToLower().Contains(com[0].ToLower())) &! x.Key.DontSearchInline).ToList();
+                Loader.Commands.Where(x => x.Key.DevOnly != true && x.Key.BotAdminOnly != true && x.Key.GroupAdminOnly != true & !x.Key.HideFromInline & !x.Key.DontSearchInline &&
+                x.Key.Triggers.Any(t => t.ToLower().Contains(com[0].ToLower())) & !x.Key.DontSearchInline).ToList();
             choices.AddRange(Loader.Commands.Where(x => x.Key.DontSearchInline && x.Key.Triggers.Any(t => String.Equals(t, com[0], StringComparison.InvariantCultureIgnoreCase))));
             var results = new List<InlineQueryResultArticle>();
             foreach (var c in choices)

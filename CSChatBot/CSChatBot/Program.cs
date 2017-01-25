@@ -82,8 +82,7 @@ namespace CSChatBot
                 LoadSettings("Primary");
             }
 
-            //Load in the modules
-            Loader.LoadModules();
+            
 
             //everything should be initialized and ready to go now, time to run our listeners / connect to services
 
@@ -92,6 +91,7 @@ namespace CSChatBot
             {
                 Telegram.Run().ContinueWith((result) => retry = !result.Result);
             } while (retry);
+
 
 
 

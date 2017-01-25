@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using DB;
 using DB.Models;
 using ModuleFramework;
+using Telegram.Bot;
+using Telegram.Bot.Args;
 using Module = ModuleFramework.Module;
 
 namespace CSChatBot.Modules
@@ -21,6 +23,8 @@ namespace CSChatBot.Modules
         internal static Dictionary<Module, Type> Modules = new Dictionary<Module, Type>();
         internal static void LoadModules()
         {
+            //Clear the list
+            Commands.Clear();
             //load base methods first
             GetMethodsFromAssembly(Assembly.GetExecutingAssembly());
 
@@ -48,8 +52,9 @@ namespace CSChatBot.Modules
                     Commands.Add(att, (ChatCommandMethod)Delegate.CreateDelegate(typeof(ChatCommandMethod), method));
                     Program.Log.WriteLine($"Loaded ChatCommand {method.Name}\n\t Trigger(s): {att.Triggers.Aggregate((a, b) => a + ", " + b)}", overrideColor: ConsoleColor.Green);
                 }
-                var constructor = type.GetConstructor(new[] { typeof(Instance), typeof(Setting) });
-                constructor.Invoke(new object[] { Program.DB, Program.LoadedSetting });
+                
+                var constructor = type.GetConstructor(new[] { typeof(Instance), typeof(Setting), typeof(TelegramBotClient) });
+                constructor.Invoke(new object[] { Program.DB, Program.LoadedSetting, Telegram.Bot });
             }
         }
     }

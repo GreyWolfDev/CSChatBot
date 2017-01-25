@@ -10,6 +10,7 @@ using DB;
 using DB.Extensions;
 using DB.Models;
 using ModuleFramework;
+using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 
 namespace CSChatBot.Modules
@@ -66,7 +67,7 @@ namespace CSChatBot.Modules
 
 
 
-        public Base(Instance db, Setting settings)
+        public Base(Instance db, Setting settings, TelegramBotClient bot)
         {
 
         }

@@ -8,13 +8,14 @@ using DB;
 using DB.Extensions;
 using DB.Models;
 using ModuleFramework;
+using Telegram.Bot;
 
 namespace CSChatBot.Modules
 {
     [Module(Author = "parabola949", Name = "Admin", Version = "1.0")]
     class Admin
     {
-        public Admin(Instance instance, Setting setting)
+        public Admin(Instance instance, Setting setting, TelegramBotClient bot)
         {
 
         }

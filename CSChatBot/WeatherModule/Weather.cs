@@ -12,6 +12,7 @@ using DB.Extensions;
 using DB.Models;
 using ModuleFramework;
 using Newtonsoft.Json;
+using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 
 // ReSharper disable InconsistentNaming
@@ -26,7 +27,7 @@ namespace WeatherModule
     {
         public static string ApiKey { get; set; }
         internal static Random Rand => new Random();
-        public Weather(Instance db, Setting settings)
+        public Weather(Instance db, Setting settings, TelegramBotClient bot)
         {
             //In the module constructor, you can do some initial setup, like adding information to the database and getting input
 
