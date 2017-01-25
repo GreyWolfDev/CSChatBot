@@ -135,7 +135,7 @@ namespace DB.Extensions
 
         #endregion
 
-        public static void ExecuteNonQuery(this Instance db, string commandText, object param = null)
+        public static int ExecuteNonQuery(this Instance db, string commandText, object param = null)
         {
             // Ensure we have a connection
             if (db.Connection == null)
@@ -151,7 +151,7 @@ namespace DB.Extensions
             }
 
             // Use Dapper to execute the given query
-            db.Connection.Execute(commandText, param);
+            return db.Connection.Execute(commandText, param);
         }
 
         #region Helpers

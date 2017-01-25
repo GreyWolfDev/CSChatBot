@@ -10,13 +10,14 @@ using DB;
 using DB.Extensions;
 using DB.Models;
 using ModuleFramework;
+using Telegram.Bot.Types.Enums;
 
 namespace CSChatBot.Modules
 {
     [ModuleFramework.Module(Author = "parabola949", Name = "Base", Version = "1.0")]
     class Base
     {
-        [ChatCommand(Triggers = new[] {"version"})]
+        [ChatCommand(Triggers = new[] {"version"}, HelpText = "Gets the current build version / time")]
         public static CommandResponse GetVersion(CommandEventArgs args)
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
@@ -29,13 +30,13 @@ namespace CSChatBot.Modules
             return new CommandResponse($"Current Version: {version}\nBuild time: {dt}");
         }
 
-        [ChatCommand(Triggers = new[] {"source"})]
+        [ChatCommand(Triggers = new[] {"source"}, HelpText = "Gets the source code for this bot")]
         public static CommandResponse GetSource(CommandEventArgs args)
         {
             return new CommandResponse("https://github.com/GreyWolfDev/CSChatBot");
         }
 
-        [ChatCommand(Triggers = new[] {"modules"})]
+        [ChatCommand(Triggers = new[] {"modules"}, HelpText = "Show a list of modules currently loaded")]
         public static CommandResponse GetModules(CommandEventArgs args)
         {
             var sb = new StringBuilder();
@@ -44,7 +45,7 @@ namespace CSChatBot.Modules
             return new CommandResponse(sb.ToString());
         }
 
-        [ChatCommand(Triggers = new[] {"commands"})]
+        [ChatCommand(Triggers = new[] {"commands"}, HelpText = "commands <module name> - show all commands in the module")]
         public static CommandResponse GetCommands(CommandEventArgs args)
         {
             var sb = new StringBuilder();
@@ -57,10 +58,10 @@ namespace CSChatBot.Modules
             foreach (var method in module.Value.GetMethods().Where(x => x.IsDefined(typeof(ChatCommand))))
             {
                 var att = method.GetCustomAttributes<ChatCommand>().First();
-                sb.AppendLine($"{method.Name} - Trigger(s): {att.Triggers.Aggregate((a, b) => a + ", " + b)}");
+                sb.AppendLine($"*{att.Triggers[0]}*: {att.HelpText??method.Name}");
             }
 
-            return new CommandResponse(sb.ToString());
+            return new CommandResponse(sb.ToString(), parseMode: ParseMode.Markdown);
         }
 
 

@@ -11,7 +11,7 @@ using ModuleFramework;
 
 namespace CSChatBot.Modules
 {
-    [Module(Author = "ParaWuff", Name = "Admin", Version = "1.0")]
+    [Module(Author = "parabola949", Name = "Admin", Version = "1.0")]
     class Admin
     {
         public Admin(Instance instance, Setting setting)
@@ -19,8 +19,13 @@ namespace CSChatBot.Modules
 
         }
 
+        [ChatCommand(Triggers = new[] {"sql"}, DevOnly = true)]
+        public static CommandResponse RunSql(CommandEventArgs args)
+        {
+            return new CommandResponse($"{args.DatabaseInstance.ExecuteNonQuery(args.Parameters)} records changed");
+        }
 
-        [ChatCommand(Triggers = new[] { "cleandb", }, DevOnly = true)]
+        [ChatCommand(Triggers = new[] { "cleandb", }, DevOnly = true, HelpText = "Cleans all users with UserID (0)")]
         public static CommandResponse CleanDatabase(CommandEventArgs args)
         {
             var start = args.DatabaseInstance.Users.Count();

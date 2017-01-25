@@ -14,28 +14,34 @@ namespace CSChatBot.Helpers
 {
     class UserHelper
     {
-        public static DB.Models.User GetTelegramUser(Instance db, Update update, bool logPoint = true)
+        public static DB.Models.User GetTelegramUser(Instance db, Update update = null, InlineQuery query = null, bool logPoint = true)
         {
-            var u = db.Users.FirstOrDefault(x => x.UserId == update.Message.From.Id) ?? new DB.Models.User
+            var from = update?.Message.From ?? query?.From;
+            if (from == null) return null;
+            var u = db.Users.FirstOrDefault(x => x.UserId == from.Id) ?? new DB.Models.User
             {
                 FirstSeen = DateTime.Now,
                 Points = 0,
                 Debt = 0,
-                IsBotAdmin = Program.LoadedSetting.TelegramDefaultAdminUserId == update.Message.From.Id,
-                UserId = update.Message.From.Id
+                IsBotAdmin = Program.LoadedSetting.TelegramDefaultAdminUserId == from.Id,
+                UserId = from.Id
             };
-            u.UserName = update.Message.From.Username;
-            u.Name = (update.Message.From.FirstName + " " + update.Message.From.LastName).Trim();
+            u.UserName = from.Username;
+            if (query?.Location != null)
+                u.Location = $"{query.Location.Latitude},{query.Location.Longitude}";
+            u.Name = (from.FirstName + " " + from.LastName).Trim();
             if (logPoint)
             {
-                
+                var where = update != null ? update.Message.Chat.Title ?? "Private" : "Using inline query";
                 u.LastHeard = DateTime.Now;
-                u.LastState = "talking in " + (update.Message.Chat.Title??"Private");
-                u.Points += update.Message.Text.Length * 10;
+                u.LastState = "talking in " + where;
+                u.Points += update?.Message.Text.Length??0 * 10;
             }
             u.Save(db);
             return u;
         }
+
+
 
         //public static CommandResponse LinkUser(Instance db, DB.Models.User usr, Update update)
         //{

@@ -43,13 +43,13 @@ namespace WeatherModule
             }
         }
 
-        [ChatCommand(Triggers = new[] { "w", "weather" })]
+        [ChatCommand(Triggers = new[] { "w", "weather" }, DontSearchInline = true, HelpText = "Gets the weather using your phone GPS")]
         public static CommandResponse GetWeather(CommandEventArgs args)
         {
             return GetResponse(args, false);
         }
 
-        [ChatCommand(Triggers = new[] { "fw" })]
+        [ChatCommand(Triggers = new[] { "fw" }, DontSearchInline = true, HelpText = "Get the fucking weather, eh?")]
         public static CommandResponse GetFknWeather(CommandEventArgs args)
         {
             return GetResponse(args, true);

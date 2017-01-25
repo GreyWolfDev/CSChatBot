@@ -13,6 +13,8 @@ using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.InlineQueryResults;
+using Telegram.Bot.Types.InputMessageContents;
 
 namespace CSChatBot
 {
@@ -26,7 +28,7 @@ namespace CSChatBot
         {
             Bot = new TelegramBotClient(Program.LoadedSetting.TelegramBotAPIKey);
             await Bot.SetWebhookAsync();
-            
+
             try
             {
                 Me = Bot.GetMeAsync().Result;
@@ -40,9 +42,73 @@ namespace CSChatBot
             }
             //Bot.MessageReceived += BotOnMessageReceived;
             Bot.OnUpdate += BotOnUpdateReceived;
+            Bot.OnInlineQuery += BotOnOnInlineQuery;
             Bot.StartReceiving();
             Log.WriteLine("Connected to Telegram and listening: " + Me.Username);
             return true;
+        }
+
+        private static void BotOnOnInlineQuery(object sender, InlineQueryEventArgs inlineQueryEventArgs)
+        {
+            try
+            {
+                var query = inlineQueryEventArgs.InlineQuery;
+
+                new Thread(() => HandleQuery(query)).Start();
+            }
+            catch (Exception e)
+            {
+                while (e.InnerException != null)
+                    e = e.InnerException;
+                var message = e.GetType() + " - " + e.Message;
+                if (e is FileNotFoundException)
+                    message += " file: " + ((FileNotFoundException)e).FileName;
+                //else if (e is DirectoryNotFoundException)
+                //    message += " file: " + ((DirectoryNotFoundException)e).;
+                message += Environment.NewLine + e.StackTrace;
+                Log.WriteLine($"Error in message handling: {message}", LogLevel.Error, fileName: "telegram.log");
+            }
+        }
+
+        private static void HandleQuery(InlineQuery query)
+        {
+            var user = UserHelper.GetTelegramUser(Program.DB, null, query);
+            Log.WriteLine("INLINE QUERY", LogLevel.Info, ConsoleColor.Cyan, "telegram.log");
+            Log.WriteLine(user.Name + ": " + query.Query, LogLevel.Info, ConsoleColor.White, "telegram.log");
+            var com = GetParameters("/" + query.Query);
+            var choices =
+                Loader.Commands.Where(x => x.Key.DevOnly != true && x.Key.BotAdminOnly != true && x.Key.GroupAdminOnly != true & !x.Key.HideFromInline & !x.Key.DontSearchInline && 
+                x.Key.Triggers.Any(t => t.ToLower().Contains(com[0].ToLower())) &! x.Key.DontSearchInline).ToList();
+            choices.AddRange(Loader.Commands.Where(x => x.Key.DontSearchInline && x.Key.Triggers.Any(t => String.Equals(t, com[0], StringComparison.InvariantCultureIgnoreCase))));
+            var results = new List<InlineQueryResultArticle>();
+            foreach (var c in choices)
+            {
+                var response = c.Value.Invoke(new CommandEventArgs
+                {
+                    SourceUser = user,
+                    DatabaseInstance = Program.DB,
+                    Parameters = com[1],
+                    Target = "",
+                    Messenger = Program.Messenger,
+                    Bot = Bot,
+                    Message = null
+                });
+                results.Add(new InlineQueryResultArticle()
+                {
+                    Description = c.Key.HelpText,
+                    Id = Loader.Commands.ToList().IndexOf(c).ToString(),
+                    Title = c.Value.Method.Name,
+                    InputMessageContent = new InputTextMessageContent
+                    {
+                        DisableWebPagePreview = true,
+                        MessageText = response.Text,
+                        ParseMode = response.ParseMode
+                    }
+                });
+            }
+            var menu = results.Cast<InlineQueryResult>().ToArray();
+            var result = Bot.AnswerInlineQueryAsync(query.Id, menu, 0, true).Result;
+
         }
 
         private static void BotOnUpdateReceived(object sender, UpdateEventArgs updateEventArgs)
@@ -50,7 +116,7 @@ namespace CSChatBot
             try
             {
                 var update = updateEventArgs.Update;
-
+                if (update.Type == UpdateType.InlineQueryUpdate) return;
                 if (!(update.Message.Date > DateTime.UtcNow.AddSeconds(-15)))
                 {
                     //Log.WriteLine("Ignoring message due to old age: " + update.Message.Date);
@@ -155,6 +221,7 @@ namespace CSChatBot
 
         private static string[] GetParameters(string input)
         {
+            if (input.Length == 0) return new[] { "", "" };
             var result = input.Contains(" ") ? new string[] { input.Substring(1, input.IndexOf(" ")).Trim(), input.Substring(input.IndexOf(" ") + 1) } : new string[] { input.Substring(1).Trim(), null };
             result[0] = result[0].Replace("@" + Me.Username, "");
             return result;

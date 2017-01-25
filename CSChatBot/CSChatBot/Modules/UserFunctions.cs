@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,7 +21,7 @@ namespace CSChatBot.Modules
         }
 
         #region Chat Commands
-        [ChatCommand(Triggers = new[] { "setloc" })]
+        [ChatCommand(Triggers = new[] { "setloc" }, HideFromInline = true)]
         public static CommandResponse SetLocation(CommandEventArgs args)
         {
             args.SourceUser.Location = args.Parameters;
@@ -28,7 +29,7 @@ namespace CSChatBot.Modules
             return new CommandResponse("Location set.");
         }
 
-        [ChatCommand(Triggers = new[] { "points" })]
+        [ChatCommand(Triggers = new[] { "points" }, HelpText = "Gets your points")]
         public static CommandResponse GetPoints(CommandEventArgs args)
         {
             var target = UserHelper.GetTarget(args);
@@ -37,7 +38,7 @@ namespace CSChatBot.Modules
                 : $"{target.Name} has {target.Points} points!");
         }
 
-        [ChatCommand(Triggers = new[] { "first" })]
+        [ChatCommand(Triggers = new[] { "first" }, HelpText = "Shows when you were first seen by the bot")]
         public static CommandResponse GetFirstSeen(CommandEventArgs args)
         {
             var target = UserHelper.GetTarget(args);
@@ -46,7 +47,7 @@ namespace CSChatBot.Modules
                 : $"{target.Name} was first seen (by me): {target.FirstSeen}");
         }
 
-        [ChatCommand(Triggers = new[] { "last" })]
+        [ChatCommand(Triggers = new[] { "last" }, HelpText = "Gets when a user was last seen, and where")]
         public static CommandResponse GetLastSeen(CommandEventArgs args)
         {
             var target = UserHelper.GetTarget(args);
@@ -58,7 +59,7 @@ namespace CSChatBot.Modules
                 : $"{target.Name} was last seen (by me) {target.LastState} {(length == null ? "just now" : length + " ago")} ({target.LastHeard})");
         }
 
-        [ChatCommand(Triggers = new[] { "top" })]
+        [ChatCommand(Triggers = new[] { "top" }, HelpText = "Shows a list of users with the highest points")]
         public static CommandResponse GetTopUsers(CommandEventArgs args)
         {
             var howMany = 5;
@@ -66,11 +67,11 @@ namespace CSChatBot.Modules
                 Int32.TryParse(args.Parameters.Trim(), out howMany);
             return
                 new CommandResponse(
-                    args.DatabaseInstance.Users.OrderByDescending(x => x.Points).Take(howMany).Aggregate("Top " + howMany + " users: ",
-                        (current, user) => current + (user.Name + " with " + user.Points + " points, ")));
+                    args.DatabaseInstance.Users.OrderByDescending(x => x.Points).Take(howMany).Aggregate("Top " + howMany + " users:",
+                        (current, user) => current + "\n" + (user.Name + " with " + user.Points + " points")));
         }
 
-        [ChatCommand(Triggers = new[] { "fine" })]
+        [ChatCommand(Triggers = new[] { "fine" }, HideFromInline = true)]
         public static CommandResponse FineUser(CommandEventArgs args)
         {
             var target = UserHelper.GetTarget(args);
@@ -80,7 +81,7 @@ namespace CSChatBot.Modules
             return new CommandResponse($"{target.Name} has been fined, and now has a debt of {target.Debt} foxdollars.");
         }
 
-        [ChatCommand(Triggers = new[] { "debt" })]
+        [ChatCommand(Triggers = new[] { "debt" }, HelpText = "Gets your current debt")]
         public static CommandResponse GetDebt(CommandEventArgs args)
         {
             var target = UserHelper.GetTarget(args);

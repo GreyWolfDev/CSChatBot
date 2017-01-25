@@ -51,6 +51,14 @@ namespace ModuleFramework
         /// Sets the help text for this command
         /// </summary>
         public string HelpText { get; set; }
+        /// <summary>
+        /// Does not run the command for inline queries (useful for things like setloc)
+        /// </summary>
+        public bool HideFromInline { get; set; } = false;
+        /// <summary>
+        /// Makes it so the command can ONLY be found inline if they type the trigger - keeps API limited commands from being run nonstop
+        /// </summary>
+        public bool DontSearchInline { get; set; } = false;
     }
 
     public class CommandResponse
