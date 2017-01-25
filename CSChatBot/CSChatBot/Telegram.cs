@@ -111,7 +111,7 @@ namespace CSChatBot
                 });
             }
             var menu = results.Cast<InlineQueryResult>().ToArray();
-            var result = Bot.AnswerInlineQueryAsync(query.Id, menu, 0, true).Result;
+            Bot.AnswerInlineQueryAsync(query.Id, menu, 0, true);
 
         }
 
