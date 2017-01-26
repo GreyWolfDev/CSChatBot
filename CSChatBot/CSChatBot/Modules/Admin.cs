@@ -20,6 +20,42 @@ namespace CSChatBot.Modules
 
         }
 
+        [ChatCommand(Triggers = new[] {"ground", "finishhim!", "kthxbai"}, BotAdminOnly = true, HelpText = "Stops a user from using the bot")]
+        public static CommandResponse GroundUser(CommandEventArgs args)
+        {
+            var target = args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
+            if (target.UserId == args.SourceUser.UserId)
+            {
+                return new CommandResponse("Invalid target.");
+            }
+            if (target.Grounded)
+            {
+                return new CommandResponse($"{target.Name} is already grounded by {target.GroundedBy}");
+            }
+            target.Grounded = true;
+            target.GroundedBy = args.SourceUser.Name;
+            target.Save(args.DatabaseInstance);
+            return new CommandResponse($"{target.Name} is grounded!");
+        }
+
+        [ChatCommand(Triggers = new[] { "unground", "izoknaow" }, BotAdminOnly = true, HelpText = "Allows user to use the bot again")]
+        public static CommandResponse UngroundUser(CommandEventArgs args)
+        {
+            var target = args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
+            if (target.UserId == args.SourceUser.UserId)
+            {
+                return new CommandResponse("Invalid target.");
+            }
+            if (!target.Grounded)
+            {
+                return new CommandResponse($"{target.Name} isn't grounded anyways...");
+            }
+            target.Grounded = false;
+            target.GroundedBy = null;
+            target.Save(args.DatabaseInstance);
+            return new CommandResponse($"{target.Name} is ungrounded!");
+        }
+
         [ChatCommand(Triggers = new[] {"sql"}, DevOnly = true)]
         public static CommandResponse RunSql(CommandEventArgs args)
         {

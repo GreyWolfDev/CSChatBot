@@ -77,6 +77,24 @@ namespace CSChatBot
         private static void HandleQuery(InlineQuery query)
         {
             var user = UserHelper.GetTelegramUser(Program.DB, null, query);
+            if (user.Grounded)
+            {
+                Bot.AnswerInlineQueryAsync(query.Id, new InlineQueryResult[]
+                {
+                    new InlineQueryResultArticle()
+                    {
+                        Description = "You are grounded...",
+                        Id = "0",
+                        Title = "Nope!",
+                        InputMessageContent = new InputTextMessageContent
+                        {
+                            DisableWebPagePreview = true,
+                            MessageText = "I did bad things, and now I'm grounded from the bot."
+                        }
+                    }
+                }, 0, true);
+                return;
+            }
             Log.WriteLine("INLINE QUERY", LogLevel.Info, ConsoleColor.Cyan, "telegram.log");
             Log.WriteLine(user.Name + ": " + query.Query, LogLevel.Info, ConsoleColor.White, "telegram.log");
             var com = GetParameters("/" + query.Query);
@@ -153,6 +171,7 @@ namespace CSChatBot
                     chat = "Private Message";
 
                 var user = UserHelper.GetTelegramUser(Program.DB, update);
+                if (user.Grounded) return;
 
                 Log.WriteLine(chat, LogLevel.Info, ConsoleColor.Cyan, "telegram.log");
                 Log.WriteLine(msg, LogLevel.Info, ConsoleColor.White, "telegram.log");
