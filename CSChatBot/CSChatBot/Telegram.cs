@@ -172,7 +172,7 @@ namespace CSChatBot
                 var update = updateEventArgs.Update;
                 if (update.Type == UpdateType.InlineQueryUpdate) return;
                 if (update.Type == UpdateType.CallbackQueryUpdate) return;
-                if (!(update.Message.Date > DateTime.UtcNow.AddSeconds(-15)))
+                if (!(update.Message?.Date > DateTime.UtcNow.AddSeconds(-15)))
                 {
                     //Log.WriteLine("Ignoring message due to old age: " + update.Message.Date);
                     return;
@@ -277,8 +277,9 @@ namespace CSChatBot
 
         private static string[] GetParameters(string input)
         {
-            if (input.Length == 0) return new[] { "", "" };
-            var result = input.Contains(" ") ? new string[] { input.Substring(1, input.IndexOf(" ")).Trim(), input.Substring(input.IndexOf(" ") + 1) } : new string[] { input.Substring(1).Trim(), null };
+            if (String.IsNullOrEmpty(input)) return new[] { "", "" };
+            // ReSharper disable StringIndexOfIsCultureSpecific.1  -- It's a space, I don't care about culture.
+            var result = input.Contains(" ") ? new [] { input.Substring(1, input.IndexOf(" ")).Trim(), input.Substring(input.IndexOf(" ") + 1) } : new [] { input.Substring(1).Trim(), null };
             result[0] = result[0].Replace("@" + Me.Username, "");
             return result;
         }

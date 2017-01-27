@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,7 +30,7 @@ namespace CSChatBot
             }
         }
 
-        public static Log Log = new Logger.Log(Path.Combine(RootDirectory, "Logs"));
+        public static Log Log = new Log(Path.Combine(RootDirectory, "Logs"));
         public static Instance DB = new Instance(Path.Combine(RootDirectory, "BotDB.sqlite"), Log.Path);
         public static Setting LoadedSetting;
         public static ModuleMessenger Messenger = new ModuleMessenger();
@@ -127,15 +128,23 @@ namespace CSChatBot
             if (LoadedSetting != null) return;
             Log.WriteLine($"Settings with alias {alias} not found.", LogLevel.Warn);
             Console.ForegroundColor = ConsoleColor.Gray;
-            Console.Write("Would you like to set up this configuration alias now? (Y|N): ");
-            if (Console.ReadKey().Key == ConsoleKey.Y)
+            var key = ConsoleKey.A;
+            while (key != ConsoleKey.Y && key != ConsoleKey.N)
             {
-                RunConfiguration(alias);
-            }
-            else
-            {
-                Log.WriteLine("\nOpted not to configure, exiting as no settings are loaded.");
-                Environment.Exit(0);
+                Console.Write("\nWould you like to set up this configuration alias now? (Y|N): ");
+                key = Console.ReadKey().Key;
+                switch (key)
+                {
+                    case ConsoleKey.Y:
+                        RunConfiguration(alias);
+                        break;
+                    case ConsoleKey.N:
+                        Console.WriteLine("-");
+                        Log.WriteLine("\n\nOpted not to configure, exiting as no settings are loaded.");
+                        Thread.Sleep(1000);
+                        Environment.Exit(0);
+                        break;
+                }
             }
         }
 
@@ -147,14 +156,20 @@ namespace CSChatBot
             Log.WriteLine($"\nBeginning set up for configuration {LoadedSetting.Alias}");
 
             #region Get Telegram Settings
-            Console.Clear();
-            Console.WriteLine("Press enter to keep the current value, or enter a new value");
-            Console.Write($"Enter your Telegram User ID (use @userinfobot if you need) [Current: {LoadedSetting.TelegramDefaultAdminUserId}]: ");
-            line = Console.ReadLine();
-            var id = 0;
-            if (!String.IsNullOrWhiteSpace(line) && int.TryParse(line, out id))
-                LoadedSetting.TelegramDefaultAdminUserId = id;
 
+            var cont = false;
+            while (!cont)
+            {
+                Console.Clear();
+                Console.WriteLine("Press enter to keep the current value, or enter a new value");
+                Console.Write(
+                    $"Enter your Telegram User ID (use @userinfobot if you need) [Current: {LoadedSetting.TelegramDefaultAdminUserId}]: ");
+                line = Console.ReadLine();
+                var id = 0;
+                if (!String.IsNullOrWhiteSpace(line) && int.TryParse(line, out id))
+                    LoadedSetting.TelegramDefaultAdminUserId = id;
+                if (LoadedSetting.TelegramDefaultAdminUserId + id != 0) cont = true;
+            }
             Console.Clear();
             Console.WriteLine("Press enter to keep the current value, or enter a new value");
             Console.Write($"Enter your Telegram bot API key [Current: {LoadedSetting.TelegramBotAPIKey}]: ");
