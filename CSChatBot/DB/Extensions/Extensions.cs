@@ -155,10 +155,18 @@ namespace DB.Extensions
         }
 
         #region Helpers
-        public static DB.Models.User GetTarget(this Message message, string args, User sourceUser, Instance db)
+        public static User GetTarget(this Message message, string args, User sourceUser, Instance db)
         {
+            if (message.ReplyToMessage != null)
+            {
+                var m = message.ReplyToMessage;
+                var userid = m.ForwardFrom?.Id ?? m.From.Id;
+                return db.Users.FirstOrDefault(x => x.UserId == userid) ?? sourceUser;
+            }
             if (String.IsNullOrWhiteSpace(args))
+            {
                 return sourceUser;
+            }
             //check for a user mention
             var mention = message?.Entities.FirstOrDefault(x => x.Type == MessageEntityType.Mention);
             var textmention = message?.Entities.FirstOrDefault(x => x.Type == MessageEntityType.TextMention);
