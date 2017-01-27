@@ -15,6 +15,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.InputMessageContents;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace CSChatBot
 {
@@ -47,9 +48,40 @@ namespace CSChatBot
             //Bot.MessageReceived += BotOnMessageReceived;
             Bot.OnUpdate += BotOnUpdateReceived;
             Bot.OnInlineQuery += BotOnOnInlineQuery;
+            Bot.OnCallbackQuery += BotOnOnCallbackQuery;
             Bot.StartReceiving();
+            
             Log.WriteLine("Connected to Telegram and listening: " + Me.Username);
             return true;
+        }
+
+        private static void BotOnOnCallbackQuery(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
+        {
+            var query = callbackQueryEventArgs.CallbackQuery;
+            //extract the trigger
+            var trigger = query.Data.Split('|')[0];
+            var args = query.Data.Replace(trigger + "|", "");
+            var user = UserHelper.GetTelegramUser(Program.DB, cbQuery: query);
+            if (user.Grounded) return;
+            foreach (var callback in Loader.CallbackCommands)
+            {
+                if (String.Equals(callback.Key.Trigger, trigger, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    var eArgs = new CallbackEventArgs()
+                    {
+                        SourceUser = user,
+                        DatabaseInstance = Program.DB,
+                        Parameters = args,
+                        Target = query.Message.Chat.Id.ToString(),
+                        Messenger = Program.Messenger,
+                        Bot = Bot,
+                        Query = query
+                    };
+                    var response = callback.Value.Invoke(eArgs);
+                    if (!String.IsNullOrWhiteSpace(response.Text))
+                        Send(response, query.Message);
+                }
+            }
         }
 
         private static void BotOnOnInlineQuery(object sender, InlineQueryEventArgs inlineQueryEventArgs)
@@ -139,6 +171,7 @@ namespace CSChatBot
             {
                 var update = updateEventArgs.Update;
                 if (update.Type == UpdateType.InlineQueryUpdate) return;
+                if (update.Type == UpdateType.CallbackQueryUpdate) return;
                 if (!(update.Message.Date > DateTime.UtcNow.AddSeconds(-15)))
                 {
                     //Log.WriteLine("Ignoring message due to old age: " + update.Message.Date);
@@ -252,6 +285,11 @@ namespace CSChatBot
 
         public static void Send(CommandResponse response, Update update)
         {
+            Send(response, update.Message);
+        }
+
+        public static void Send(CommandResponse response, Message update)
+        {
             var text = response.Text;
             Program.Log.WriteLine("Replying: " + text, overrideColor: ConsoleColor.Yellow);
             try
@@ -260,8 +298,8 @@ namespace CSChatBot
                 {
                     text = text.Replace("/me", "*") + "*";
                 }
-                long targetId = response.Level == ResponseLevel.Public ? update.Message.Chat.Id : update.Message.From.Id;
-                Bot.SendTextMessageAsync(targetId, text, replyMarkup: response.Markup, parseMode: response.ParseMode);
+                long targetId = response.Level == ResponseLevel.Public ? update.Chat.Id : update.From.Id;
+                Bot.SendTextMessageAsync(targetId, text, replyMarkup: CreateMarkupFromMenu(response.Menu), parseMode: response.ParseMode);
                 //Bot.SendTextMessage(update.Message.Chat.Id, text);
                 return;
             }
@@ -289,7 +327,7 @@ namespace CSChatBot
                 }
                 long targetId = 0;
                 if (long.TryParse(args.Target, out targetId))
-                    Bot.SendTextMessageAsync(targetId, text, replyMarkup: args.Response.Markup, parseMode: args.Response.ParseMode);
+                    Bot.SendTextMessageAsync(targetId, text, replyMarkup: CreateMarkupFromMenu(args.Response.Menu), parseMode: args.Response.ParseMode);
                 //Bot.SendTextMessage(update.Message.Chat.Id, text);
                 return;
             }
@@ -299,6 +337,32 @@ namespace CSChatBot
                 //Process.Start("csircbot.exe");
                 //Environment.Exit(7);
             }
+        }
+
+        public static InlineKeyboardMarkup CreateMarkupFromMenu(Menu menu)
+        {
+            if (menu == null) return null;
+            var col = menu.Columns - 1;
+            //this is gonna be fun...
+            var final = new List<InlineKeyboardButton[]>();
+            for (var i = 0; i < menu.Buttons.Count; i++)
+            {
+                var row = new List<InlineKeyboardButton>();
+                do
+                {
+                    var cur = menu.Buttons[i];
+                    row.Add(new InlineKeyboardButton(cur.Text, $"{cur.Trigger}|{cur.ExtraData}")
+                    {
+                        Url = cur.Url
+                    });
+                    i++;
+                    if (i == menu.Buttons.Count) break;
+                } while (i%(col+1) != 0);
+                i--;
+                final.Add(row.ToArray());
+                if (i == menu.Buttons.Count) break;
+            }
+            return new InlineKeyboardMarkup(final.ToArray());
         }
     }
 }

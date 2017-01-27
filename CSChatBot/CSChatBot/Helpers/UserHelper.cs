@@ -14,9 +14,9 @@ namespace CSChatBot.Helpers
 {
     class UserHelper
     {
-        public static DB.Models.User GetTelegramUser(Instance db, Update update = null, InlineQuery query = null, bool logPoint = true)
+        public static DB.Models.User GetTelegramUser(Instance db, Update update = null, InlineQuery query = null, CallbackQuery cbQuery = null, bool logPoint = true)
         {
-            var from = update?.Message.From ?? query?.From;
+            var from = update?.Message.From ?? query?.From ?? cbQuery?.From;
             if (from == null) return null;
             var u = db.Users.FirstOrDefault(x => x.UserId == from.Id) ?? new DB.Models.User
             {

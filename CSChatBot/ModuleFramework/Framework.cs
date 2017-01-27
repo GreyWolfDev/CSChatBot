@@ -61,6 +61,31 @@ namespace ModuleFramework
         public bool DontSearchInline { get; set; } = false;
     }
 
+    [AttributeUsage(AttributeTargets.Method)]
+    public class CallbackCommand : Attribute
+    {
+        /// <summary>
+        /// What triggers the command? starts with ! or /
+        /// </summary>
+        public string Trigger { get; set; }
+        /// <summary>
+        /// Only bot admins can use (moderators)
+        /// </summary>
+        public bool BotAdminOnly { get; set; } = false;
+        /// <summary>
+        /// Only group admins can use this
+        /// </summary>
+        public bool GroupAdminOnly { get; set; } = false;
+        /// <summary>
+        /// Only developers / bot owner (you) can use this
+        /// </summary>
+        public bool DevOnly { get; set; } = false;
+        /// <summary>
+        /// Sets the help text for this command
+        /// </summary>
+        public string HelpText { get; set; }
+    }
+
     public class CommandResponse
     {
         /// <summary>
@@ -71,7 +96,7 @@ namespace ModuleFramework
         /// Where to reply.  Private = in PM, Public = The chat the message is from
         /// </summary>
         public ResponseLevel Level { get; set; }
-        public ReplyMarkup Markup { get; set; }
+        public Menu Menu { get; set; }
         public ParseMode ParseMode { get; set; }
         /// <summary>
         /// Sends a response through the bot
@@ -81,11 +106,11 @@ namespace ModuleFramework
         /// <param name="replyMarkup">Reply markup.  Optional</param>
         /// <param name="parseMode">How the text should be parsed</param>
 
-        public CommandResponse(string msg, ResponseLevel level = ResponseLevel.Public, ReplyMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Default)
+        public CommandResponse(string msg, ResponseLevel level = ResponseLevel.Public, Menu menu = null, ParseMode parseMode = ParseMode.Default)
         {
             Text = msg;
             Level = level;
-            Markup = replyMarkup;
+            Menu = menu;
             ParseMode = parseMode;
         }
     }
@@ -99,6 +124,17 @@ namespace ModuleFramework
         public ModuleMessenger Messenger { get; set; }
         public TelegramBotClient Bot { get; set; }
         public Message Message { get; set; }
+    }
+
+    public class CallbackEventArgs
+    {
+        public Instance DatabaseInstance { get; set; }
+        public User SourceUser { get; set; }
+        public string Parameters { get; set; }
+        public string Target { get; set; } //groupid, userid
+        public ModuleMessenger Messenger { get; set; }
+        public TelegramBotClient Bot { get; set; }
+        public CallbackQuery Query { get; set; }
     }
 
     public delegate void MessageSentEventHandler(object sender, MessageSentEventArgs e);
@@ -124,12 +160,59 @@ namespace ModuleFramework
         public string Target { get; set; }
         public CommandResponse Response { get; set; }
     }
-    
+
     /// <summary>
     /// Forces a response level
     /// </summary>
     public enum ResponseLevel
     {
         Public, Private
+    }
+
+    //custom buttons
+    public class InlineButton
+    {
+        /// <summary>
+        /// The button text
+        /// </summary>
+        public string Text { get; set; }
+        /// <summary>
+        /// What trigger to associate this button with.  Make sure you create a CallbackCommand with the trigger set (Optional)
+        /// </summary>
+        public string Trigger { get; set; }
+        /// <summary>
+        /// Any extra data you want to include, not visible to the user (Optional)
+        /// </summary>
+        public string ExtraData { get; set; }
+        /// <summary>
+        /// Have this button link to a chat or website. (Optional)
+        /// </summary>
+        public string Url { get; set; }
+
+        public InlineButton(string text, string trigger = "", string extraData = "", string url = "")
+        {
+            Url = url;
+            Text = text;
+            Trigger = trigger;
+            ExtraData = extraData;
+        }
+    }
+
+    public class Menu
+    {
+        /// <summary>
+        /// The buttons you want in your menu
+        /// </summary>
+        public List<InlineButton> Buttons { get; set; }
+        /// <summary>
+        /// How many columns.  Defaults to 1.
+        /// </summary>
+        public int Columns { get; set; }
+
+        public Menu(int col = 1, List<InlineButton> buttons = null)
+        {
+            Buttons = buttons ?? new List<InlineButton>();
+            Columns = Math.Max(col, 1);
+        }
     }
 }

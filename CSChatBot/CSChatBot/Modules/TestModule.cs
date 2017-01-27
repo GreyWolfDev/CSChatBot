@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using DB;
 using DB.Models;
@@ -43,19 +44,41 @@ namespace CSChatBot.Modules
             //we can also interact directly with the bot api as such
             args.Bot.SendTextMessageAsync(args.Message.Chat.Id, "This is a test button", replyMarkup: new InlineKeyboardMarkup(new[]
             {
-                new InlineKeyboardButton("Para's Thoughts")
+                new InlineKeyboardButton("Grey Wolf Dev Channel")
                 {
-                    Url="https://t.me/para949"
+                    Url="https://t.me/werewolfdev"
                 },
                 //can also use conditional statements when building menus
-                true ? new InlineKeyboardButton("test") : null
+                true ? new InlineKeyboardButton("Para's Channel") {Url="https://t.me/para949"} : null
             }));
 
+
+            //Another way to create a button menu is like this:
+            var menu = new Menu
+            {
+                Columns = 3,
+                Buttons = new List<InlineButton>
+                {
+                    new InlineButton("Column 1, Row 1", "test", "extra data 1"), //These buttons will trigger the callback command below
+                    new InlineButton("Column 2, Row 1", "test", "extra data 2"),
+                    new InlineButton("Column 3, Row 1", "test", "extra data 3"),
+                    //This button will be the "remainder" (4 % 3 == 1) so it will span the bottom
+                    new InlineButton("Grey Wolf Support", url: "https://t.me/werewolfsupport") //this button won't trigger a command, just opens the url.
+                }
+            };
+
             //now, return the method.  This can be null, in which case no text will be sent.
-            return new CommandResponse("test complete?");
+            // as you can see, we attached our custom menu
+            return new CommandResponse("Here's my response!", ResponseLevel.Public, menu);
 
 
             //Why have all these ways to send messages?  The idea here is flexibility, ease of use, but also the ability to really drill down into the bot if needed.
+        }
+
+        [CallbackCommand(Trigger = "test", DevOnly = true)]
+        public static CommandResponse CallbackTest(CallbackEventArgs args)
+        {
+            return new CommandResponse($"Group id: {args.Query.Message.Chat.Id}\nButton extra data: {args.Parameters}");
         }
 
 
