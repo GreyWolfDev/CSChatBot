@@ -52,6 +52,8 @@ namespace CSChatBot.Modules
                 true ? new InlineKeyboardButton("Para's Channel") {Url="https://t.me/para949"} : null
             }));
 
+            // of course, if you saved the bot in your constructor, you can also use that
+            Console.WriteLine(_bot.IsReceiving);
 
             //Another way to create a button menu is like this:
             var menu = new Menu
