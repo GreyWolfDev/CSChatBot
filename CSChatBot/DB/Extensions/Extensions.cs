@@ -41,12 +41,138 @@ namespace DB.Extensions
         public static bool ExistsInDb(this User user, Instance db)
         {
             var rows = db.Connection.Query($"SELECT COUNT(1) as 'Count' FROM Users WHERE ID = '{user.ID}'");
-            return (int) rows.First().Count > 0;
+            return (int)rows.First().Count > 0;
         }
 
         public static void RemoveFromDb(this User user, Instance db)
         {
             db.ExecuteNonQuery("DELETE FROM Users WHERE ID = @ID", user);
+        }
+
+        #endregion
+
+        #region Groups
+
+        public static void Save(this Group u, Instance db)
+        {
+            if (u.ID == null || !ExistsInDb(u, db))
+            {
+                //need to insert
+                db.ExecuteNonQuery(
+                    "insert into chatgroup (GroupId, Name, UserName, MemberCount) VALUES (@GroupId, @Name, @UserName, @MemberCount)",
+                    u);
+                u.ID =
+                    db.Connection.Query<int>(
+                        $"SELECT ID FROM chatgroup WHERE GroupId = @GroupId", u)
+                        .First();
+            }
+            else
+            {
+                db.ExecuteNonQuery(
+                    "UPDATE chatgroup SET GroupId = @GroupId, Name = @Name, UserName = @UserName, MemberCount = @MemberCount WHERE ID = @ID",
+                    u);
+            }
+        }
+
+        public static bool ExistsInDb(this Group group, Instance db)
+        {
+            var rows = db.Connection.Query($"SELECT COUNT(1) as 'Count' FROM chatgroup WHERE ID = '{group.ID}'");
+            return (int)rows.First().Count > 0;
+        }
+
+        public static void RemoveFromDb(this Group group, Instance db)
+        {
+            db.ExecuteNonQuery("DELETE FROM chatgroup WHERE ID = @ID", group);
+        }
+
+        /// <summary>
+        /// Gets a group setting from the database
+        /// </summary>
+        /// <typeparam name="T">The type the setting should be (bool, int, string)</typeparam>
+        /// <param name="group">What group the setting comes from</param>
+        /// <param name="field">The name of the setting</param>
+        /// <param name="db">The database instance</param>
+        /// <param name="def">The default value for the field</param>
+        /// <returns></returns>
+        public static T GetSetting<T>(this Group group, string field, Instance db, object def)
+        {
+            if (db.Connection.State != ConnectionState.Open)
+                db.Connection.Open();
+            //verify settings exist
+            var columns = new SQLiteCommand("PRAGMA table_info(chatgroup)", db.Connection).ExecuteReader();
+            var t = default(T);
+            while (columns.Read())
+            {
+                if (String.Equals(columns[1].ToString(), field))
+                {
+                    var result = new SQLiteCommand($"select {field} from chatgroup where ID = {group.ID}", db.Connection).ExecuteScalar();
+                    if (t.GetType() == typeof(bool))
+                    {
+                        result = (result.ToString() == "1"); //make it a boolean value
+                    }
+                    return (T)result;
+                }
+            }
+            var type = "BLOB";
+            if (t.GetType() == typeof(int))
+                type = "INTEGER";
+            if (t.GetType() == typeof(bool))
+                type = "INTEGER";
+            if (t.GetType() == typeof(string))
+                type = "TEXT";
+            new SQLiteCommand($"ALTER TABLE chatgroup ADD COLUMN {field} {type} DEFAULT {(type == "INTEGER" ? def : $"'{def}'")};", db.Connection)
+                .ExecuteNonQuery();
+            return (T)def;
+
+        }
+
+        /// <summary>
+        /// Gets a group setting from the database
+        /// </summary>
+        /// <typeparam name="T">The type the setting should be (bool, int, string)</typeparam>
+        /// <param name="group">What group the setting comes from</param>
+        /// <param name="field">The name of the setting</param>
+        /// <param name="db">The database instance</param>
+        /// <param name="def">The default value for the field</param>
+        /// <returns></returns>
+        public static bool SetSetting<T>(this Group group, string field, Instance db, object def, object value)
+        {
+            try
+            {
+                if (db.Connection.State != ConnectionState.Open)
+                    db.Connection.Open();
+                //verify settings exist
+                var columns = new SQLiteCommand("PRAGMA table_info(chatgroup)", db.Connection).ExecuteReader();
+                var t = default(T);
+                var type = "BLOB";
+                if (t.GetType() == typeof(int))
+                    type = "INTEGER";
+                if (t.GetType() == typeof(bool))
+                    type = "INTEGER";
+                if (t.GetType() == typeof(string))
+                    type = "TEXT";
+                bool settingExists = false;
+                while (columns.Read())
+                {
+                    if (String.Equals(columns[1].ToString(), field))
+                    {
+                        settingExists = true;
+                    }
+                }
+                if (!settingExists)
+                {
+                    new SQLiteCommand($"ALTER TABLE chatgroup ADD COLUMN {field} {type} DEFAULT {(type == "INTEGER" ? def : $"'{def}'")};", db.Connection)
+                        .ExecuteNonQuery();
+                }
+
+                new SQLiteCommand($"UPDATE chatgroup set {field} = {(type == "INTEGER" ? t.GetType() == typeof(bool)? (bool)value?"1":"0" : value : $"'{value}'")} where ID = {group.ID}", db.Connection).ExecuteNonQuery();
+                
+                return true;
+            }
+            catch(Exception e)
+            {
+                return false;
+            }
         }
 
         #endregion
@@ -74,7 +200,7 @@ namespace DB.Extensions
         public static bool ExistsInDb(this Setting set, Instance db)
         {
             var rows = db.Connection.Query($"SELECT COUNT(1) as 'Count' FROM settings WHERE ID = '{set.ID}'");
-            return (int) rows.First().Count > 0;
+            return (int)rows.First().Count > 0;
         }
 
         public static void RemoveFromDb(this Setting set, Instance db)
@@ -157,7 +283,8 @@ namespace DB.Extensions
         #region Helpers
         public static User GetTarget(this Message message, string args, User sourceUser, Instance db)
         {
-            if (message.ReplyToMessage != null)
+            if (message == null) return sourceUser;
+            if (message?.ReplyToMessage != null)
             {
                 var m = message.ReplyToMessage;
                 var userid = m.ForwardFrom?.Id ?? m.From.Id;

@@ -35,7 +35,6 @@ namespace DB
                 Connection = new SQLiteConnection($"Data Source={dbpath};Version=3;");
                 Connection.Open();
             }
-
             Log.WriteLine("Database connection succeeded");
         }
 
@@ -63,11 +62,15 @@ namespace DB
                     Alias TEXT UNIQUE NOT NULL, TelegramBotAPIKey TEXT, TelegramDefaultAdminUserId TEXT)", Connection)
                 .ExecuteNonQuery();
             Log.WriteLine("Settings table created successfully");
+
+            new SQLiteCommand(@"create table chatgroup (ID INTEGER PRIMARY KEY AUTOINCREMENT, GroupId INTEGER UNIQUE NOT NULL, Name TEXT, UserName TEXT, MemberCount INTEGER)", Connection).ExecuteNonQuery();
         }
 
         public IEnumerable<Setting> Settings => Connection.Query<Setting>("select * from settings");
 
         public IEnumerable<User> Users => Connection.Query<User>("select * from users");
+
+        public IEnumerable<Group> Groups => Connection.Query<Group>("select * from chatgroup");
 
         public User GetUser(int ID)
         {
@@ -85,10 +88,15 @@ namespace DB
             return Connection.Query<User>($"select * from users where UserId = {Id}").FirstOrDefault();
         }
 
-        [Obsolete("Users can change username.  Use GetUserById instead")]
-        public User GetUserByUserName(string name)
+        public Group GetGroup(int ID)
         {
-            return Connection.Query<User>($"select * from users where UserName = '{name}'").FirstOrDefault();
+            return Connection.Query<Group>($"select * from chatgroup where ID = {ID}").FirstOrDefault();
+        }
+
+
+        public Group GetGroupById(long Id)
+        {
+            return Connection.Query<Group>($"select * from chatgroup where GroupId = {Id}").FirstOrDefault();
         }
     }
 }

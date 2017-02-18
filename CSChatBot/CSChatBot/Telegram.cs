@@ -17,6 +17,7 @@ using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.InputMessageContents;
 using Telegram.Bot.Types.ReplyMarkups;
 
+
 namespace CSChatBot
 {
 
@@ -40,19 +41,19 @@ namespace CSChatBot
             }
             catch (Exception e)
             {
-                Log.WriteLine("502 bad gateway, restarting in 10 seconds", LogLevel.Error, fileName: "telegram.log");
-                Thread.Sleep(TimeSpan.FromSeconds(10));
+                Log.WriteLine("502 bad gateway, restarting in 2 seconds", LogLevel.Error, fileName: "telegram.log");
+                Thread.Sleep(TimeSpan.FromSeconds(2));
                 //API is down... 
-                return false;
+                return true;
             }
             //Bot.MessageReceived += BotOnMessageReceived;
             Bot.OnUpdate += BotOnUpdateReceived;
             Bot.OnInlineQuery += BotOnOnInlineQuery;
             Bot.OnCallbackQuery += BotOnOnCallbackQuery;
             Bot.StartReceiving();
-            
+
             Log.WriteLine("Connected to Telegram and listening: " + Me.Username);
-            return true;
+            return false;
         }
 
         private static void BotOnOnCallbackQuery(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
@@ -204,73 +205,88 @@ namespace CSChatBot
                     chat = "Private Message";
 
                 var user = UserHelper.GetTelegramUser(Program.DB, update);
+                
+                
                 if (user.Grounded) return;
-
+                DB.Models.Group group;
+                if (update.Message.Chat.Type != ChatType.Private)
+                {
+                    group = GroupHelper.GetGroup(Program.DB, update);
+                }
                 Log.WriteLine(chat, LogLevel.Info, ConsoleColor.Cyan, "telegram.log");
                 Log.WriteLine(msg, LogLevel.Info, ConsoleColor.White, "telegram.log");
 
-
-                if (update.Message.Text.StartsWith("!") || update.Message.Text.StartsWith("/"))
+                try
                 {
-                    var args = GetParameters(update.Message.Text);
-                    foreach (var command in Loader.Commands)
+                    if (update.Message.Text.StartsWith("!") || update.Message.Text.StartsWith("/"))
                     {
-                        if (command.Key.Triggers.Contains(args[0]))
+                        var args = GetParameters(update.Message.Text);
+                        foreach (var command in Loader.Commands)
                         {
-                            //check for access
-                            var att = command.Key;
-                            if (att.DevOnly && update.Message.From.Id != Program.LoadedSetting.TelegramDefaultAdminUserId)
+                            if (command.Key.Triggers.Contains(args[0].ToLower()))
                             {
+                                //check for access
+                                var att = command.Key;
+                                if (att.DevOnly &&
+                                    update.Message.From.Id != Program.LoadedSetting.TelegramDefaultAdminUserId)
+                                {
 
-                                Send(new CommandResponse("You are not the developer!"), update);
-                                return;
+                                    Send(new CommandResponse("You are not the developer!"), update);
+                                    return;
 
-                            }
-                            if (att.BotAdminOnly & !user.IsBotAdmin)
-                            {
-                                Send(new CommandResponse("You are not a bot admin!"), update);
-                                return;
-                            }
-                            if (att.GroupAdminOnly)
-                            {
-                                if (update.Message.Chat.Type == ChatType.Private)
+                                }
+                                if (att.BotAdminOnly & !user.IsBotAdmin)
+                                {
+                                    Send(new CommandResponse("You are not a bot admin!"), update);
+                                    return;
+                                }
+                                if (att.GroupAdminOnly)
+                                {
+                                    if (update.Message.Chat.Type == ChatType.Private)
+                                    {
+                                        Send(new CommandResponse("You need to run this in a group"), update);
+                                        return;
+                                    }
+                                    //is the user an admin of the group?
+                                    var status =
+                                        Bot.GetChatMemberAsync(update.Message.Chat.Id, update.Message.From.Id)
+                                            .Result.Status;
+                                    if (status != ChatMemberStatus.Administrator && status != ChatMemberStatus.Creator)
+                                    {
+                                        Send(new CommandResponse("You are not a group admin!"), update);
+                                        return;
+                                    }
+                                }
+                                if (att.InGroupOnly && update.Message.Chat.Type == ChatType.Private)
                                 {
                                     Send(new CommandResponse("You need to run this in a group"), update);
                                     return;
                                 }
-                                //is the user an admin of the group?
-                                var status = Bot.GetChatMemberAsync(update.Message.Chat.Id, update.Message.From.Id).Result.Status;
-                                if (status != ChatMemberStatus.Administrator && status != ChatMemberStatus.Creator)
+                                if (att.InPrivateOnly)
                                 {
-                                    Send(new CommandResponse("You are not a group admin!"), update);
+                                    Send(new CommandResponse("You need to run this in private"), update);
                                     return;
                                 }
+                                var eArgs = new CommandEventArgs
+                                {
+                                    SourceUser = user,
+                                    DatabaseInstance = Program.DB,
+                                    Parameters = args[1],
+                                    Target = update.Message.Chat.Id.ToString(),
+                                    Messenger = Program.Messenger,
+                                    Bot = Bot,
+                                    Message = update.Message
+                                };
+                                var response = command.Value.Invoke(eArgs);
+                                if (!String.IsNullOrWhiteSpace(response.Text))
+                                    Send(response, update);
                             }
-                            if (att.InGroupOnly && update.Message.Chat.Type == ChatType.Private)
-                            {
-                                Send(new CommandResponse("You need to run this in a group"), update);
-                                return;
-                            }
-                            if (att.InPrivateOnly)
-                            {
-                                Send(new CommandResponse("You need to run this in private"), update);
-                                return;
-                            }
-                            var eArgs = new CommandEventArgs
-                            {
-                                SourceUser = user,
-                                DatabaseInstance = Program.DB,
-                                Parameters = args[1],
-                                Target = update.Message.Chat.Id.ToString(),
-                                Messenger = Program.Messenger,
-                                Bot = Bot,
-                                Message = update.Message
-                            };
-                            var response = command.Value.Invoke(eArgs);
-                            if (!String.IsNullOrWhiteSpace(response.Text))
-                                Send(response, update);
                         }
                     }
+                }
+                catch
+                {
+                    // ignored
                 }
             }
         }
@@ -279,7 +295,7 @@ namespace CSChatBot
         {
             if (String.IsNullOrEmpty(input)) return new[] { "", "" };
             // ReSharper disable StringIndexOfIsCultureSpecific.1  -- It's a space, I don't care about culture.
-            var result = input.Contains(" ") ? new [] { input.Substring(1, input.IndexOf(" ")).Trim(), input.Substring(input.IndexOf(" ") + 1) } : new [] { input.Substring(1).Trim(), null };
+            var result = input.Contains(" ") ? new[] { input.Substring(1, input.IndexOf(" ")).Trim(), input.Substring(input.IndexOf(" ") + 1) } : new[] { input.Substring(1).Trim(), null };
             result[0] = result[0].Replace("@" + Me.Username, "");
             return result;
         }
@@ -358,7 +374,7 @@ namespace CSChatBot
                     });
                     i++;
                     if (i == menu.Buttons.Count) break;
-                } while (i%(col+1) != 0);
+                } while (i % (col + 1) != 0);
                 i--;
                 final.Add(row.ToArray());
                 if (i == menu.Buttons.Count) break;

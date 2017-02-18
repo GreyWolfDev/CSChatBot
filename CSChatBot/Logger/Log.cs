@@ -65,9 +65,11 @@ namespace Logger
                 while (_logQueue.Count > 0)
                 {
                     var item = _logQueue.Dequeue();
+                    if (item == null) continue;
                     var succeed = false;
                     while (succeed == false)
                     {
+
                         try
                         {
                             using (var sw = new StreamWriter(item.File, true))

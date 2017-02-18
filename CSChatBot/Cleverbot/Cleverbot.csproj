@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{936A8668-DF10-4ADD-8790-4E7C46EA81D5}</ProjectGuid>
+    <ProjectGuid>{B12C7B0E-B9BF-4D37-B450-E276978029CC}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ModuleFramework</RootNamespace>
-    <AssemblyName>ModuleFramework</AssemblyName>
+    <RootNamespace>Cleverbot</RootNamespace>
+    <AssemblyName>Cleverbot</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -53,14 +53,21 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Extensions.cs" />
-    <Compile Include="Framework.cs" />
+    <Compile Include="Cleverbot.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DB\DB.csproj">
       <Project>{c266bbac-788e-4012-87f4-7b8302af14cb}</Project>
       <Name>DB</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Logger\Logger.csproj">
+      <Project>{5b72e456-42bc-4834-bb15-65bbe0b76101}</Project>
+      <Name>Logger</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ModuleFramework\ModuleFramework.csproj">
+      <Project>{936a8668-df10-4add-8790-4e7c46ea81d5}</Project>
+      <Name>ModuleFramework</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -9,6 +9,8 @@ using Telegram.Bot.Args;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using DB.Extensions;
+using System.Threading.Tasks;
 
 namespace CSChatBot.Modules
 {
@@ -95,7 +97,32 @@ namespace CSChatBot.Modules
 
                 //_bot.SendTextMessageAsync(u.Message.Chat.Id, u.Message.Text);
             }
-            
+
+        }
+
+        [ChatCommand(Triggers = new[] { "testgrpset" }, BotAdminOnly = true)]
+        public static CommandResponse TestGroupSetting(CommandEventArgs args)
+        {
+            var m = args.Message;
+            var id = m.Chat.Id;
+            var group = args.DatabaseInstance.GetGroupById(id);
+            var b = args.Bot;
+
+            b.SendTextMessageAsync(id, "Getting boolean value, default false.");
+            var value = group.GetSetting<bool>("TestBool", args.DatabaseInstance, false);
+            Thread.Sleep(500);
+            b.SendTextMessageAsync(id, $"Result: {value}\nSetting to true...");
+            var success = group.SetSetting<bool>("TestBool", args.DatabaseInstance, false, true);
+            value = group.GetSetting<bool>("TestBool", args.DatabaseInstance, false);
+            Thread.Sleep(500);
+            b.SendTextMessageAsync(id, $"Update result: {success}\nCurrent value for test setting: {value}\nSetting to false");
+
+            success = group.SetSetting<bool>("TestBool", args.DatabaseInstance, false, false);
+            value = group.GetSetting<bool>("TestBool", args.DatabaseInstance, false);
+            Thread.Sleep(500);
+            b.SendTextMessageAsync(id, $"Update result: {success}\nCurrent value for test setting: {value}");
+            return null;
+
         }
     }
 }

@@ -90,7 +90,7 @@ namespace CSChatBot
             var retry = false;
             do
             {
-                Telegram.Run().ContinueWith((result) => retry = !result.Result);
+                Telegram.Run().ContinueWith((result) => retry = result.Result);
             } while (retry);
 
 
