@@ -19,8 +19,7 @@ namespace CSChatBot.Helpers
             {
                 GroupId = from.Id
             };
-            u.Name = from.FirstName;
-            u.UserName = from.Username;
+            u.Name = from.Title;
             u.UserName = from.Username;
             u.Save(db);
             return u;

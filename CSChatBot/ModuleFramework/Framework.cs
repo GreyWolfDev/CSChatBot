@@ -59,6 +59,10 @@ namespace ModuleFramework
         /// Makes it so the command can ONLY be found inline if they type the trigger - keeps API limited commands from being run nonstop
         /// </summary>
         public bool DontSearchInline { get; set; } = false;
+        /// <summary>
+        /// for help text, tells what parameters can be used
+        /// </summary>
+        public string[] Parameters { get; set; } = new string[0];
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -84,6 +88,7 @@ namespace ModuleFramework
         /// Sets the help text for this command
         /// </summary>
         public string HelpText { get; set; }
+        
     }
 
     public class CommandResponse

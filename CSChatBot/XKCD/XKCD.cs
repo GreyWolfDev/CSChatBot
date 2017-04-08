@@ -25,7 +25,7 @@ namespace XKCD
             _bot = bot;
         }
 
-        [ChatCommand(Triggers = new[] { "xkcd" }, DontSearchInline = true, HelpText = "This is a sample command")]
+        [ChatCommand(Triggers = new[] { "xkcd" }, HelpText = "Gets a random xkcd, or searches", Parameters = new[] { "none - random", "<search query>", "'new' - latest" })]
         public static CommandResponse GetXkcd(CommandEventArgs args)
         {
             XkcdPost chosen;
@@ -34,7 +34,7 @@ namespace XKCD
             if (String.IsNullOrEmpty(args.Parameters))
             {
                 //get the current XKCD
-                
+
                 chosen = JsonConvert.DeserializeObject<XkcdPost>(
                     new WebClient().DownloadString($"https://xkcd.com/{R.Next(current.num)}/info.0.json"));
 
@@ -64,14 +64,22 @@ namespace XKCD
                         page = page.Substring(page.IndexOf("<div id=\"search\">"));
                         page = page.Substring(page.IndexOf("q=") + 2);
                         page = page.Substring(0, page.IndexOf("/&amp")).Replace("https://xkcd.com/", "");
-                        chosen =
-                        JsonConvert.DeserializeObject<XkcdPost>(
-                            new WebClient().DownloadString($"https://xkcd.com/{page}/info.0.json"));
+                        if (page == "https://xkcd.com")
+                        {
+                            //latest post
+                            chosen =
+                            JsonConvert.DeserializeObject<XkcdPost>(
+                            new WebClient().DownloadString($"https://xkcd.com/info.0.json"));
+                        }
+                        else
+                        {
+                            chosen =
+                            JsonConvert.DeserializeObject<XkcdPost>(
+                                new WebClient().DownloadString($"https://xkcd.com/{page}/info.0.json"));
+                        }
                     }
                 }
             }
-
-
             return new CommandResponse($"{chosen.title}\n{chosen.alt}\n{chosen.img}");
         }
     }

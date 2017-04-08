@@ -37,6 +37,7 @@ namespace CSChatBot
 
         static void Main(string[] args)
         {
+            Console.OutputEncoding = Encoding.UTF8;
             Messenger.MessageSent += MessengerOnMessageSent;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
             if (args.Length > 0)
@@ -94,9 +95,34 @@ namespace CSChatBot
             } while (retry);
 
 
-
+            new Task(MemberCountWatch).Start();
 
             Thread.Sleep(-1);
+        }
+
+        private static void MemberCountWatch()
+        {
+            while (true)
+            {
+                try
+                {
+                    var groups = DB.Groups.Select(x => x.GroupId);
+                    foreach (var g in groups)
+                    {
+                        var count = Telegram.Bot.GetChatMembersCountAsync(g).Result;
+                        var grp = DB.GetGroupById(g);
+                        grp.MemberCount = count;
+                        grp.Save(DB);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    // ignored
+                }
+
+                Thread.Sleep(TimeSpan.FromHours(1));
+            }
         }
 
 

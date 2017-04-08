@@ -49,6 +49,98 @@ namespace DB.Extensions
             db.ExecuteNonQuery("DELETE FROM Users WHERE ID = @ID", user);
         }
 
+        /// <summary>
+        /// Gets a user setting from the database
+        /// </summary>
+        /// <typeparam name="T">The type the setting should be (bool, int, string)</typeparam>
+        /// <param name="user">What user the setting comes from</param>
+        /// <param name="field">The name of the setting</param>
+        /// <param name="db">The database instance</param>
+        /// <param name="def">The default value for the field</param>
+        /// <returns></returns>
+        public static T GetSetting<T>(this User user, string field, Instance db, object def)
+        {
+            if (db.Connection.State != ConnectionState.Open)
+                db.Connection.Open();
+            //verify settings exist
+            var columns = new SQLiteCommand("PRAGMA table_info(users)", db.Connection).ExecuteReader();
+            var t = default(T);
+
+            while (columns.Read())
+            {
+                if (String.Equals(columns[1].ToString(), field))
+                {
+                    var result = new SQLiteCommand($"select {field} from users where ID = {user.ID}", db.Connection).ExecuteScalar();
+                    if (t != null && t.GetType() == typeof(bool))
+                    {
+                        result = (result.ToString() == "1"); //make it a boolean value
+                    }
+                    return (T)result;
+                }
+            }
+            var type = "BLOB";
+            if (t == null)
+                type = "TEXT";
+            else if (t.GetType() == typeof(int))
+                type = "INTEGER";
+            else if (t.GetType() == typeof(bool))
+                type = "INTEGER";
+            
+            new SQLiteCommand($"ALTER TABLE users ADD COLUMN {field} {type} DEFAULT {(type == "INTEGER" ? def : $"'{def}'")};", db.Connection)
+                .ExecuteNonQuery();
+            return (T)def;
+
+        }
+
+        /// <summary>
+        /// Sets a user setting to the database
+        /// </summary>
+        /// <typeparam name="T">The type the setting should be (bool, int, string)</typeparam>
+        /// <param name="user">What user the setting comes from</param>
+        /// <param name="field">The name of the setting</param>
+        /// <param name="db">The database instance</param>
+        /// <param name="def">The default value for the field</param>
+        /// <returns></returns>
+        public static bool SetSetting<T>(this User user, string field, Instance db, object def, object value)
+        {
+            try
+            {
+                if (db.Connection.State != ConnectionState.Open)
+                    db.Connection.Open();
+                //verify settings exist
+                var columns = new SQLiteCommand("PRAGMA table_info(users)", db.Connection).ExecuteReader();
+                var t = default(T);
+                var type = "BLOB";
+                if (t == null)
+                    type = "TEXT";
+                else if (t.GetType() == typeof(int))
+                    type = "INTEGER";
+                else if (t.GetType() == typeof(bool))
+                    type = "INTEGER";
+                bool settingExists = false;
+                while (columns.Read())
+                {
+                    if (String.Equals(columns[1].ToString(), field))
+                    {
+                        settingExists = true;
+                    }
+                }
+                if (!settingExists)
+                {
+                    new SQLiteCommand($"ALTER TABLE users ADD COLUMN {field} {type} DEFAULT {(type == "INTEGER" ? def : $"'{def}'")};", db.Connection)
+                        .ExecuteNonQuery();
+                }
+
+                new SQLiteCommand($"UPDATE users set {field} = {(type == "INTEGER" ? (t != null && t.GetType() == typeof(bool)) ? (bool)value ? "1" : "0" : value : $"'{value}'")} where ID = {user.ID}", db.Connection).ExecuteNonQuery();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
         #endregion
 
         #region Groups
@@ -106,7 +198,7 @@ namespace DB.Extensions
                 if (String.Equals(columns[1].ToString(), field))
                 {
                     var result = new SQLiteCommand($"select {field} from chatgroup where ID = {group.ID}", db.Connection).ExecuteScalar();
-                    if (t.GetType() == typeof(bool))
+                    if (t != null && t.GetType() == typeof(bool))
                     {
                         result = (result.ToString() == "1"); //make it a boolean value
                     }
@@ -114,12 +206,12 @@ namespace DB.Extensions
                 }
             }
             var type = "BLOB";
-            if (t.GetType() == typeof(int))
-                type = "INTEGER";
-            if (t.GetType() == typeof(bool))
-                type = "INTEGER";
-            if (t.GetType() == typeof(string))
+            if (t == null)
                 type = "TEXT";
+            else if (t.GetType() == typeof(int))
+                type = "INTEGER";
+            else if (t.GetType() == typeof(bool))
+                type = "INTEGER";
             new SQLiteCommand($"ALTER TABLE chatgroup ADD COLUMN {field} {type} DEFAULT {(type == "INTEGER" ? def : $"'{def}'")};", db.Connection)
                 .ExecuteNonQuery();
             return (T)def;
@@ -145,12 +237,12 @@ namespace DB.Extensions
                 var columns = new SQLiteCommand("PRAGMA table_info(chatgroup)", db.Connection).ExecuteReader();
                 var t = default(T);
                 var type = "BLOB";
-                if (t.GetType() == typeof(int))
-                    type = "INTEGER";
-                if (t.GetType() == typeof(bool))
-                    type = "INTEGER";
-                if (t.GetType() == typeof(string))
+                if (t == null)
                     type = "TEXT";
+                else if (t.GetType() == typeof(int))
+                    type = "INTEGER";
+                else if (t.GetType() == typeof(bool))
+                    type = "INTEGER";
                 bool settingExists = false;
                 while (columns.Read())
                 {
@@ -165,11 +257,11 @@ namespace DB.Extensions
                         .ExecuteNonQuery();
                 }
 
-                new SQLiteCommand($"UPDATE chatgroup set {field} = {(type == "INTEGER" ? t.GetType() == typeof(bool)? (bool)value?"1":"0" : value : $"'{value}'")} where ID = {group.ID}", db.Connection).ExecuteNonQuery();
-                
+                new SQLiteCommand($"UPDATE chatgroup set {field} = {(type == "INTEGER" ? (t != null && t.GetType() == typeof(bool)) ? (bool)value ? "1" : "0" : value : $"'{value}'")} where ID = {group.ID}", db.Connection).ExecuteNonQuery();
+
                 return true;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 return false;
             }
@@ -261,6 +353,39 @@ namespace DB.Extensions
 
         #endregion
 
+        public static string ExecuteQuery(this Instance db, string commandText, object param = null)
+        {
+            // Ensure we have a connection
+            if (db.Connection == null)
+            {
+                throw new NullReferenceException(
+                    "Please provide a connection");
+            }
+
+            // Ensure that the connection state is Open
+            if (db.Connection.State != ConnectionState.Open)
+            {
+                db.Connection.Open();
+            }
+            var reader = db.Connection.ExecuteReader(commandText, param);
+            var response = "";
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                response += $"{reader.GetName(i)} - ";
+            }
+            response += "\n";
+            while (reader.Read())
+            {
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    response += $"{reader[i]} - ";
+                }
+                response += "\n";
+            }
+            // Use Dapper to execute the given query
+            return response;
+        }
+
         public static int ExecuteNonQuery(this Instance db, string commandText, object param = null)
         {
             // Ensure we have a connection
@@ -278,6 +403,11 @@ namespace DB.Extensions
 
             // Use Dapper to execute the given query
             return db.Connection.Execute(commandText, param);
+        }
+
+        public static string ToString(this Telegram.Bot.Types.User user)
+        {
+            return (user.FirstName + " " + user.LastName).Trim();
         }
 
         #region Helpers

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSChatBot", "CSChatBot\CSChatBot.csproj", "{5C0AE7A1-BE52-4EAF-B658-053A4648C39C}"
 EndProject
@@ -20,6 +20,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XKCD", "XKCD\XKCD.csproj", "{873DB4C0-0DBE-406E-88D2-77A5C606DD30}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Misc", "Misc\Misc.csproj", "{A43E32B9-2C06-46E9-BA30-394C0EF0421D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Steam", "Steam\Steam.csproj", "{D665F11B-608C-4903-9D5E-F8BC6100FD4E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,10 @@ Global
 		{A43E32B9-2C06-46E9-BA30-394C0EF0421D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A43E32B9-2C06-46E9-BA30-394C0EF0421D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A43E32B9-2C06-46E9-BA30-394C0EF0421D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D665F11B-608C-4903-9D5E-F8BC6100FD4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D665F11B-608C-4903-9D5E-F8BC6100FD4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D665F11B-608C-4903-9D5E-F8BC6100FD4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D665F11B-608C-4903-9D5E-F8BC6100FD4E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

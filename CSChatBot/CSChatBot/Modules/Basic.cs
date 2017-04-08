@@ -24,7 +24,7 @@ namespace CSChatBot.Modules
 
         }
 
-        [ChatCommand(Triggers = new[] { "google", "g", "lmgtfy" }, HideFromInline = true)]
+        [ChatCommand(Triggers = new[] { "google", "g", "lmgtfy" }, HideFromInline = true, Parameters =new[] { "<your search>" })]
         public static CommandResponse Google(CommandEventArgs args)
         {
             if (String.IsNullOrEmpty(args.Parameters)) return new CommandResponse("");

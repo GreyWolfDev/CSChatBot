@@ -9,6 +9,9 @@ using DB.Extensions;
 using DB.Models;
 using ModuleFramework;
 using Telegram.Bot;
+using Microsoft.CSharp;
+using System.CodeDom.Compiler;
+using System.Diagnostics;
 
 namespace CSChatBot.Modules
 {
@@ -38,7 +41,7 @@ namespace CSChatBot.Modules
             return new CommandResponse($"{target.Name} is grounded!");
         }
 
-        [ChatCommand(Triggers = new[] { "unground", "izoknaow" }, BotAdminOnly = true, HelpText = "Allows user to use the bot again")]
+        [ChatCommand(Triggers = new[] { "unground", "izoknaow" }, BotAdminOnly = true, HelpText = "Allows user to use the bot again", Parameters = new[]{"<userid>", "<@username>", "as a reply"})]
         public static CommandResponse UngroundUser(CommandEventArgs args)
         {
             var target = args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
@@ -56,10 +59,16 @@ namespace CSChatBot.Modules
             return new CommandResponse($"{target.Name} is ungrounded!");
         }
 
-        [ChatCommand(Triggers = new[] {"sql"}, DevOnly = true)]
+        [ChatCommand(Triggers = new[] {"sql"}, DevOnly = true, Parameters = new[] { "<sql command>"})]
         public static CommandResponse RunSql(CommandEventArgs args)
         {
             return new CommandResponse($"{args.DatabaseInstance.ExecuteNonQuery(args.Parameters)} records changed");
+        }
+
+        [ChatCommand(Triggers = new[] { "query" }, DevOnly = true, Parameters = new[] {"<select statement>" })]
+        public static CommandResponse RunQuery(CommandEventArgs args)
+        {
+            return new CommandResponse(args.DatabaseInstance.ExecuteQuery(args.Parameters));
         }
 
         [ChatCommand(Triggers = new[] { "cleandb", }, DevOnly = true, HelpText = "Cleans all users with UserID (0)")]
@@ -73,7 +82,7 @@ namespace CSChatBot.Modules
 
         #region Chat Commands
 
-        [ChatCommand(Triggers = new[] { "addbotadmin", "addadmin" }, DevOnly = true)]
+        [ChatCommand(Triggers = new[] { "addbotadmin", "addadmin" }, DevOnly = true, Parameters = new[] { "<userid>", "<@username>", "as a reply" })]
         public static CommandResponse AddBotAdmin(CommandEventArgs args)
         {
             var target = UserHelper.GetTarget(args);
@@ -85,7 +94,7 @@ namespace CSChatBot.Modules
             return new CommandResponse(null);
         }
         
-        [ChatCommand(Triggers = new[] { "rembotadmin", "remadmin" }, DevOnly = true)]
+        [ChatCommand(Triggers = new[] { "rembotadmin", "remadmin" }, DevOnly = true, Parameters = new[] { "<userid>", "<@username>", "as a reply" })]
         public static CommandResponse RemoveBotAdmin(CommandEventArgs args)
         {
             var target = UserHelper.GetTarget(args);
@@ -95,6 +104,58 @@ namespace CSChatBot.Modules
                 return new CommandResponse($"{target.Name} is no longer a bot admin.");
             }
             return new CommandResponse(null);
+        }
+
+        [ChatCommand(Triggers = new[] { "cs"}, DevOnly = true)]
+        public static CommandResponse RunCsCode(CommandEventArgs args)
+        {
+            return new CommandResponse(CompileCs(
+                @"using System.Linq;
+                using System;
+                using System.Collections.Generic;
+                using System.Diagnostics;
+                using System.IO;
+                using System.Net;
+                using System.Threading;
+                class Program {
+                    public static void Main(string[] args) {
+                        " + args.Parameters + @"
+                    }
+                }").Result);
+        }
+
+        private static async Task<string> CompileCs(string code)
+        {
+            var csc = new CSharpCodeProvider(new Dictionary<string, string>() { { "CompilerVersion", "v3.5" } });
+            var parameters = new CompilerParameters(new[] { "mscorlib.dll", "System.Core.dll", "System.dll", "System.Data.dll" }, "foo.exe", true);
+            parameters.GenerateExecutable = true;
+            CompilerResults results = csc.CompileAssemblyFromSource(parameters, code);
+            var result = new StringBuilder();
+            if (results.Errors.HasErrors)
+            {
+                results.Errors.Cast<CompilerError>().ToList().ForEach(error => result.AppendLine(error.ErrorText));
+                return result.ToString();
+            }
+            //no errors, run it.
+            var proc = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "foo.exe",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                }
+            };
+            
+            proc.Start();
+
+            while (!proc.StandardOutput.EndOfStream)
+            {
+                result.AppendLine(proc.StandardOutput.ReadLine());
+                await Task.Delay(500);
+            }
+            return result.ToString();
         }
         #endregion
     }

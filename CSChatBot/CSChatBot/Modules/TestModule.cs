@@ -30,7 +30,7 @@ namespace CSChatBot.Modules
             //you can do other things as well, like manipulate the database, add settings, etc.  Check the Weather Module for more samples.
         }
 
-        [ChatCommand(Triggers = new[] { "test" }, BotAdminOnly = true)]
+        [ChatCommand(Triggers = new[] { "dotest" }, BotAdminOnly = true)]
         public static CommandResponse DoTest(CommandEventArgs args)
         {
             //This will send a command along without returning

@@ -22,7 +22,7 @@ namespace CSChatBot.Modules
         }
 
         #region Chat Commands
-        [ChatCommand(Triggers = new[] { "setloc" }, HideFromInline = true)]
+        [ChatCommand(Triggers = new[] { "setloc" }, HideFromInline = true, Parameters = new[] { "Your location"})]
         public static CommandResponse SetLocation(CommandEventArgs args)
         {
             args.SourceUser.Location = args.Parameters;
@@ -30,7 +30,7 @@ namespace CSChatBot.Modules
             return new CommandResponse("Location set.");
         }
 
-        [ChatCommand(Triggers = new[] { "points" }, HelpText = "Gets your points")]
+        [ChatCommand(Triggers = new[] { "points" }, HelpText = "Gets points", Parameters = new[] { "none - yourself", "<userid>", "<@username>", "as a reply" })]
         public static CommandResponse GetPoints(CommandEventArgs args)
         {
             var target = UserHelper.GetTarget(args);
@@ -39,7 +39,7 @@ namespace CSChatBot.Modules
                 : $"{target.Name} has {target.Points} points!");
         }
 
-        [ChatCommand(Triggers = new[] { "first" }, HelpText = "Shows when you were first seen by the bot")]
+        [ChatCommand(Triggers = new[] { "first" }, HelpText = "Shows when someone was first seen by the bot", Parameters = new[] { "none - yourself", "<userid>", "<@username>", "as a reply" })]
         public static CommandResponse GetFirstSeen(CommandEventArgs args)
         {
             var target = UserHelper.GetTarget(args);
@@ -48,7 +48,7 @@ namespace CSChatBot.Modules
                 : $"{target.Name} was first seen (by me): {target.FirstSeen}");
         }
 
-        [ChatCommand(Triggers = new[] { "last" }, HelpText = "Gets when a user was last seen, and where")]
+        [ChatCommand(Triggers = new[] { "last" }, HelpText = "Gets when a user was last seen, and where", Parameters = new[] { "none - yourself", "<userid>", "<@username>", "as a reply" })]
         public static CommandResponse GetLastSeen(CommandEventArgs args)
         {
             var target = UserHelper.GetTarget(args);
@@ -72,7 +72,7 @@ namespace CSChatBot.Modules
                         (current, user) => current + "\n" + (user.Name + " with " + user.Points + " points")));
         }
 
-        [ChatCommand(Triggers = new[] { "fine" }, HideFromInline = true)]
+        [ChatCommand(Triggers = new[] { "fine" }, HideFromInline = true, Parameters = new[] { "none - yourself", "<userid>", "<@username>", "as a reply" })]
         public static CommandResponse FineUser(CommandEventArgs args)
         {
             var target = UserHelper.GetTarget(args);
@@ -82,7 +82,7 @@ namespace CSChatBot.Modules
             return new CommandResponse($"{target.Name} has been fined, and now has a debt of {target.Debt} foxdollars.");
         }
 
-        [ChatCommand(Triggers = new[] { "debt" }, HelpText = "Gets your current debt")]
+        [ChatCommand(Triggers = new[] { "debt" }, HelpText = "Gets current debt", Parameters = new[] { "none - yourself", "<userid>", "<@username>", "as a reply" })]
         public static CommandResponse GetDebt(CommandEventArgs args)
         {
             var target = UserHelper.GetTarget(args);

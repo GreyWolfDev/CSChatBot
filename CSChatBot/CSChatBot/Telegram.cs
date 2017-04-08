@@ -64,6 +64,8 @@ namespace CSChatBot
             var args = query.Data.Replace(trigger + "|", "");
             var user = UserHelper.GetTelegramUser(Program.DB, cbQuery: query);
             if (user.Grounded) return;
+            Log.WriteLine(query.From.FirstName, LogLevel.Info, ConsoleColor.Cyan, "telegram.log");
+            Log.WriteLine(query.Data, LogLevel.Info, ConsoleColor.White, "telegram.log");
             foreach (var callback in Loader.CallbackCommands)
             {
                 if (String.Equals(callback.Key.Trigger, trigger, StringComparison.InvariantCultureIgnoreCase))
@@ -152,7 +154,7 @@ namespace CSChatBot
                 {
                     Description = c.Key.HelpText,
                     Id = Loader.Commands.ToList().IndexOf(c).ToString(),
-                    Title = c.Value.Method.Name,
+                    Title = c.Key.Triggers[0],
                     InputMessageContent = new InputTextMessageContent
                     {
                         DisableWebPagePreview = true,

@@ -12,6 +12,8 @@ using Newtonsoft.Json;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace Misc
 {
@@ -23,18 +25,31 @@ namespace Misc
     {
         public Misc(Instance db, Setting settings, TelegramBotClient bot)
         {
-            settings.AddField(db, "ClarifaiToken");
-            var clarifaiToken = settings.GetString(db, "ClarifaiToken");
+            settings.AddField(db, "ClarifaiAppId");
+            var ClarifaiAppId = settings.GetString(db, "ClarifaiAppId");
             var r = new Random();
-            if (String.IsNullOrWhiteSpace(clarifaiToken))
+            if (String.IsNullOrWhiteSpace(ClarifaiAppId))
             {
                 //now ask for the API Key
                 Console.Clear();
-                Console.Write("What is your Clarifai token? : ");
-                clarifaiToken = Console.ReadLine();
-                settings.SetString(db, "ClarifaiToken", clarifaiToken);
+                Console.Write("What is your Clarifai App Id? : ");
+                ClarifaiAppId = Console.ReadLine();
+                settings.SetString(db, "ClarifaiAppId", ClarifaiAppId);
             }
-            if (String.IsNullOrEmpty(clarifaiToken)) return;
+            if (String.IsNullOrEmpty(ClarifaiAppId)) return;
+
+            settings.AddField(db, "ClarifaiAppSecret");
+            var ClarifaiAppSecret = settings.GetString(db, "ClarifaiAppSecret");
+            if (String.IsNullOrWhiteSpace(ClarifaiAppSecret))
+            {
+                //now ask for the API Key
+                Console.Clear();
+                Console.Write("What is your Clarifai App Secret? : ");
+                ClarifaiAppSecret = Console.ReadLine();
+                settings.SetString(db, "ClarifaiAppSecret", ClarifaiAppSecret);
+            }
+            if (String.IsNullOrEmpty(ClarifaiAppSecret)) return;
+
             bot.OnUpdate += (sender, args) =>
             {
                 try
@@ -45,7 +60,7 @@ namespace Misc
                         {
                             var g = db.GetGroupById(args.Update.Message.Chat.Id);
                             var nsfw = g.GetSetting<bool>("NSFW", db, false);
-                            if (nsfw) return;
+                            if (!nsfw) return;
                         }
                         new Task(() =>
                         {
@@ -53,11 +68,27 @@ namespace Misc
                             var pathing = bot.GetFileAsync(photo.FileId).Result;
                             var url =
                                 $"https://api.telegram.org/file/bot{settings.TelegramBotAPIKey}/{pathing.FilePath}";
-                            
-                            var nsfw = GetIsNude(url, clarifaiToken);
+                            var nsfw = GetIsNude(url, ClarifaiAppId, ClarifaiAppSecret);
                             if (nsfw > 70)
                             {
-                                //omg it's not safe for work, do something!
+                                var responses = new[]
+                                 {
+                                    "rrrrf",
+                                    "Hot!",
+                                    "OMAI",
+                                    "*mounts*",
+                                    "oh fuck the hell yes....",
+                                    "mmf.  *excuses herself for a few minutes*",
+                                    "Yes, I'll take one, to go..  to my room...",
+                                    "Keep em cumming...",
+                                };
+                                bot.SendTextMessageAsync(args.Update.Message.Chat.Id,
+                                    responses[r.Next(responses.Length)], replyToMessageId: args.Update.Message.MessageId);
+
+                                //download it
+                                Directory.CreateDirectory("nsfw");
+                                var name = "nsfw\\" + pathing.FilePath.Substring(pathing.FilePath.LastIndexOf("/") + 1);
+                                new WebClient().DownloadFileAsync(new Uri(url), name);
                             }
                         }).Start();
                     }
@@ -83,26 +114,71 @@ namespace Misc
         /// </summary>
         /// <param name="url">The url of the image</param>
         /// <returns>Percentage chance that the image is NSFW</returns>
-        private int GetIsNude(string url, string token)
+        private int GetIsNude(string url, string appid, string secret)
         {
-            using (var wc = new WebClient())
+            var token = GetClarifaiToken(appid, secret);
+            try
             {
-                wc.Headers[HttpRequestHeader.ContentType] = "application/json";
-                wc.Headers.Add("Authorization", $"Bearer {token}");
-                var response = wc.UploadString($"https://api.clarifai.com/v2/models/e9576d86d2004ed1a38ba0cf39ecb4b1/outputs", "POST", JsonConvert.SerializeObject(new ClarifaiInputs(url)));
-                var result = JsonConvert.DeserializeObject<ClarifaiOutput>(response);
-                return (int)(result.outputs[0].data.concepts.First(x => x.name == "nsfw").value * 100);
+                using (var wc = new WebClient())
+                {
+                    string response = "";
+                    try
+                    {
+                        wc.Headers[HttpRequestHeader.ContentType] = "application/json";
+                        wc.Headers.Add("Authorization", $"Bearer {token}");
+                        response = wc.UploadString($"https://api.clarifai.com/v2/models/e9576d86d2004ed1a38ba0cf39ecb4b1/outputs", "POST", JsonConvert.SerializeObject(new ClarifaiInputs(url)));
+                    }
+                    catch
+                    {
+                        token = GetClarifaiToken(appid, secret, true);
+                        wc.Headers[HttpRequestHeader.ContentType] = "application/json";
+                        wc.Headers.Add("Authorization", $"Bearer {token}");
+                        response = wc.UploadString($"https://api.clarifai.com/v2/models/e9576d86d2004ed1a38ba0cf39ecb4b1/outputs", "POST", JsonConvert.SerializeObject(new ClarifaiInputs(url)));
+                    }
+                    var result = JsonConvert.DeserializeObject<ClarifaiOutput>(response);
+                    return (int)(result.outputs[0].data.concepts.First(x => x.name == "nsfw").value * 100);
+                }
+            }
+            catch (Exception e)
+            {
+                // ignored
+                return 0;
             }
         }
 
-        [ChatCommand(Triggers = new[] { "think" }, HelpText = "Checks to see what the internet thinks")]
+        private string _clarifaiToken = "";
+
+        private string GetClarifaiToken(string id, string secret, bool renew = false)
+        {
+            if (String.IsNullOrEmpty(_clarifaiToken) || renew)
+            {
+                using (var client = new HttpClient())
+                {
+                    var url = "https://api.clarifai.com/v2/token";
+                    var content = new StringContent(JsonConvert.SerializeObject("\"grant_type\":\"client_credentials\""), Encoding.UTF8, "application/json");
+                    String encoded = Convert.ToBase64String(Encoding.GetEncoding("ISO-8859-1").GetBytes(id + ":" + secret));
+                    client.DefaultRequestHeaders.Authorization = AuthenticationHeaderValue.Parse($"Basic {encoded}");
+                    var response = client.PostAsync(url, content).Result;
+                    response.EnsureSuccessStatusCode();
+                    var res = response.Content.ReadAsStringAsync().Result;
+                    var result = JsonConvert.DeserializeObject<ClarifaiAPIKey>(res);
+                    if (result.status.code == 10000)
+                    {
+                        _clarifaiToken = result.access_token;
+                    }
+                }
+            }
+            return _clarifaiToken;
+        }
+
+        [ChatCommand(Triggers = new[] { "think" }, HelpText = "Checks to see what the internet thinks", Parameters = new[] { "<topic>" })]
         public static CommandResponse InternetThink(CommandEventArgs args)
         {
             var result = GetResult(args.Parameters);
             //return message
             return new CommandResponse(result.conclusion, parseMode: ParseMode.Html);
         }
-
+        
         static ThinkResult GetResult(string query)
         {
             using (var wc = new WebClient())
@@ -111,6 +187,14 @@ namespace Misc
                 return JsonConvert.DeserializeObject<ThinkResult>(wc.DownloadString($"http://www.whatdoestheinternetthink.net/core/client.php?query={query}&searchtype=1"));
             }
         }
+    }
+
+    public class ClarifaiAPIKey
+    {
+        public Status status { get; set; }
+        public string access_token { get; set; }
+        public string expires_in { get; set; }
+        public string scope { get; set; }
     }
 
 
