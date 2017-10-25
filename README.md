@@ -10,7 +10,7 @@ CSChatBot is a bot framework for .NET devs looking to build a Telegram Bot
 ## Requirements
 
   - This solution is built in VS2017, though modules can be built in any version of VS
-  - This is a native .NET application, not dotnet core, so must run on Windows
+  - This is a native .NET application, not dotnet core, so must run on Windows - I plan to move to core soon
 
 > My overall goal with CSChatBot was
 > to provide a fast, simple solution
@@ -28,7 +28,7 @@ There is a module template available in the releases.  You can import than into 
 #### Basic setup
 If you choose to create your own project, rather than using the template, you will need to install the Telegram.Bot library from Nuget
 ```
-Install-Package Telegram.Bot -Pre
+Install-Package Telegram.Bot.Core -Pre
 ```
 In addition to this, you will also need to reference some of the libraries from the source:
  - DB
@@ -81,5 +81,5 @@ There are a few modules included with CSChatBot
 | Misc | Random stuff, like NSFW image detection and other things | Misc |
 | Weather | A sample module that gets the weather for the user | WeatherModule |
 | XKCD | A module for searching XKCD of course :) | XKCD |
-
+| Steam | Can pull profile information for yourself or others | Steam |
 
