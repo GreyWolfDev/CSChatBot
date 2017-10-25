@@ -16,7 +16,7 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.InputMessageContents;
 using Telegram.Bot.Types.ReplyMarkups;
-
+#pragma warning disable 4014
 
 namespace CSChatBot
 {
@@ -82,7 +82,9 @@ namespace CSChatBot
                     };
                     var response = callback.Value.Invoke(eArgs);
                     if (!String.IsNullOrWhiteSpace(response.Text))
-                        Send(response, query.Message);
+                    {
+                        Send(response, query.Message, true);
+                    }
                 }
             }
         }
@@ -328,12 +330,12 @@ namespace CSChatBot
             return result;
         }
 
-        public static void Send(CommandResponse response, Update update)
+        public static void Send(CommandResponse response, Update update, bool edit = false)
         {
-            Send(response, update.Message);
+            Send(response, update.Message, edit);
         }
 
-        public static void Send(CommandResponse response, Message update)
+        public static void Send(CommandResponse response, Message update, bool edit = false)
         {
             var text = response.Text;
             Program.Log.WriteLine("Replying: " + text, overrideColor: ConsoleColor.Yellow);
@@ -343,8 +345,18 @@ namespace CSChatBot
                 {
                     text = text.Replace("/me", "*") + "*";
                 }
-                long targetId = response.Level == ResponseLevel.Public ? update.Chat.Id : update.From.Id;
-                Bot.SendTextMessageAsync(targetId, text, replyMarkup: CreateMarkupFromMenu(response.Menu), parseMode: response.ParseMode);
+                var targetId = response.Level == ResponseLevel.Public ? update.Chat.Id : update.From.Id;
+                if (edit && targetId == update.Chat.Id)
+                {
+                    Bot.EditMessageTextAsync(targetId, update.MessageId, text,
+                        replyMarkup: CreateMarkupFromMenu(response.Menu),
+                        parseMode: response.ParseMode);
+                }
+                else
+                {
+                    Bot.SendTextMessageAsync(targetId, text, replyMarkup: CreateMarkupFromMenu(response.Menu),
+                        parseMode: response.ParseMode);
+                }
                 //Bot.SendTextMessage(update.Message.Chat.Id, text);
                 return;
             }
