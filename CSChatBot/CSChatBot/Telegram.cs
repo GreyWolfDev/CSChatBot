@@ -109,7 +109,7 @@ namespace CSChatBot
             }
         }
 
-        private static void HandleQuery(InlineQuery query)
+        private static async void HandleQuery(InlineQuery query)
         {
             var user = UserHelper.GetTelegramUser(Program.DB, null, query);
             if (user.Grounded)
@@ -137,7 +137,7 @@ namespace CSChatBot
                 Loader.Commands.Where(x => x.Key.DevOnly != true && x.Key.BotAdminOnly != true && x.Key.GroupAdminOnly != true & !x.Key.HideFromInline & !x.Key.DontSearchInline &&
                 x.Key.Triggers.Any(t => t.ToLower().Contains(com[0].ToLower())) & !x.Key.DontSearchInline).ToList();
             choices.AddRange(Loader.Commands.Where(x => x.Key.DontSearchInline && x.Key.Triggers.Any(t => String.Equals(t, com[0], StringComparison.InvariantCultureIgnoreCase))));
-            var results = new List<InlineQueryResultArticle>();
+            var results = new List<InlineQueryResult>();
             foreach (var c in choices)
             {
                 var response = c.Value.Invoke(new CommandEventArgs
@@ -150,21 +150,47 @@ namespace CSChatBot
                     Bot = Bot,
                     Message = null
                 });
+
+
+
+
+                var title = c.Key.Triggers[0];
+                var description = c.Key.HelpText;
+                if (query.Query.Split(' ').Length > 1 || c.Key.DontSearchInline || c.Key.Triggers.Any(x => String.Equals(x, com[0], StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    description = response.ImageDescription ?? description;
+                    title = response.ImageTitle ?? title;
+                }
                 results.Add(new InlineQueryResultArticle()
                 {
-                    Description = c.Key.HelpText,
+                    Description = description,
                     Id = Loader.Commands.ToList().IndexOf(c).ToString(),
-                    Title = c.Key.Triggers[0],
+                    Title = title,
+                    ThumbUrl = response.ImageUrl,
+                    Url = response.ImageUrl,
+                    HideUrl = true,
                     InputMessageContent = new InputTextMessageContent
                     {
-                        DisableWebPagePreview = true,
+                        DisableWebPagePreview = false,
                         MessageText = response.Text,
                         ParseMode = response.ParseMode
                     }
                 });
+
             }
-            var menu = results.Cast<InlineQueryResult>().ToArray();
-            Bot.AnswerInlineQueryAsync(query.Id, menu, 0, true);
+            var menu = results.ToArray();
+            try
+            {
+                await Bot.AnswerInlineQueryAsync(query.Id, menu, 0, true);
+            }
+            catch (AggregateException e)
+            {
+                Console.WriteLine(e.InnerExceptions[0].Message);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
 
         }
 
@@ -207,8 +233,8 @@ namespace CSChatBot
                     chat = "Private Message";
 
                 var user = UserHelper.GetTelegramUser(Program.DB, update);
-                
-                
+
+
                 if (user.Grounded) return;
                 DB.Models.Group group;
                 if (update.Message.Chat.Type != ChatType.Private)

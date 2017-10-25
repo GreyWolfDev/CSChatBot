@@ -61,29 +61,34 @@ namespace WeatherModule
             var loc = args.Parameters;
             if (String.IsNullOrEmpty(loc))
             {
-                return new CommandResponse(String.IsNullOrEmpty(args.SourceUser.Location) ? "Please use !setloc <location> to set your default location, or enter a location as a parameter" : (fknweather?GetFknWeather(args.SourceUser.Location):GetWeather(args.SourceUser.Location)), parseMode: ParseMode.Markdown);
+                return (fknweather ? GetFknWeather(args.SourceUser.Location) : GetWeather(args.SourceUser.Location)) ?? new CommandResponse("Please use !setloc <location> to set your default location, or enter a location as a parameter");
             }
             var target = args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
             var location = target == args.SourceUser ? loc : target.Location;
-            var weather = fknweather?GetFknWeather(location): GetWeather(location);
+            var weather = fknweather ? GetFknWeather(location) : GetWeather(location);
 
-            return new CommandResponse(!String.IsNullOrEmpty(weather) ? weather : $"Could not find weather for {loc}", parseMode: ParseMode.Markdown);
+            return weather ?? new CommandResponse($"Could not find weather for {loc}");
         }
 
-        
 
-        public static string GetWeather(string location)
+
+        public static CommandResponse GetWeather(string location)
         {
             var c = Parse($"http://api.wunderground.com/api/{ApiKey}/conditions/pws:1/q/{location}.xml");
             if (!String.IsNullOrEmpty(c.place))
             {
 
-                return ($" Conditions for {c.place}:\n{c.weather1} {c.temperature_string}\nForecast:\n{ParseForecast($"http://api.wunderground.com/api/{ApiKey}/forecast/pws:1/q/{location}.xml")}");
+                return new CommandResponse($" Conditions for {c.place}:\n{c.weather1} {c.temperature_string}\nForecast:\n{ParseForecast($"http://api.wunderground.com/api/{ApiKey}/forecast/pws:1/q/{location}.xml")}", parseMode: ParseMode.Markdown)
+                {
+                    ImageUrl = c.icon_url,
+                    ImageDescription = $"{c.weather1} {c.temperature_string}",
+                    ImageTitle = c.place
+                };
             }
             return null;
         }
 
-        public static string GetFknWeather(string location)
+        public static CommandResponse GetFknWeather(string location)
         {
 
             dynamic phrases = JsonConvert.DeserializeObject(new StreamReader(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Resources\\fw.json").ReadToEnd());
@@ -166,7 +171,12 @@ namespace WeatherModule
                 //we have our choices...
                 var choice = choices[Rand.Next(choices.Count)];
                 result += choice.title.ToString().Replace("|", " ") + "\n" + choice.subline.ToString();
-                return result;
+                return new CommandResponse(result, parseMode: ParseMode.Markdown)
+                {
+                    ImageUrl = c.icon_url,
+                    ImageDescription = choice.title.ToString().Replace("|", " ") + "\n" + choice.subline.ToString(),
+                    ImageTitle = c.place
+                };
             }
             return null;
 
@@ -232,6 +242,11 @@ namespace WeatherModule
                             {
                                 reader.Read();
                                 c.place = (reader.Value);
+                            }
+                            else if (reader.Name.Equals("icon_url"))
+                            {
+                                reader.Read();
+                                c.icon_url = reader.Value;
                             }
                             else if (reader.Name.Equals("observation_time"))
                             {
@@ -306,6 +321,7 @@ namespace WeatherModule
         public string visibility_km = "";
         public string latitude = "";
         public string longitude = "";
+        public string icon_url;
     }
 
     [Serializable]
