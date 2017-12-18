@@ -25,6 +25,7 @@ namespace Misc
     {
         public Misc(Instance db, Setting settings, TelegramBotClient bot)
         {
+            RandoFactGenerator.Init();
             settings.AddField(db, "ClarifaiAppId");
             var ClarifaiAppId = settings.GetString(db, "ClarifaiAppId");
             var r = new Random();
@@ -98,6 +99,12 @@ namespace Misc
                     // ignored
                 }
             };
+        }
+
+        [ChatCommand(Triggers =new[] { "randofact"}, HelpText ="Generates a random \"fact\"")]
+        public static CommandResponse RandoFact(CommandEventArgs e)
+        {
+            return new CommandResponse(RandoFactGenerator.Get());
         }
 
         [ChatCommand(Triggers = new[] { "togglensfw" }, GroupAdminOnly = true, HelpText = "Toggle NSFW image detection for the group")]

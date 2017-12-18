@@ -140,28 +140,35 @@ namespace CSChatBot
             var results = new List<InlineQueryResultArticle>();
             foreach (var c in choices)
             {
-                var response = c.Value.Invoke(new CommandEventArgs
+                try
                 {
-                    SourceUser = user,
-                    DatabaseInstance = Program.DB,
-                    Parameters = com[1],
-                    Target = "",
-                    Messenger = Program.Messenger,
-                    Bot = Bot,
-                    Message = null
-                });
-                results.Add(new InlineQueryResultArticle()
-                {
-                    Description = c.Key.HelpText,
-                    Id = Loader.Commands.ToList().IndexOf(c).ToString(),
-                    Title = c.Key.Triggers[0],
-                    InputMessageContent = new InputTextMessageContent
+                    var response = c.Value.Invoke(new CommandEventArgs
                     {
-                        DisableWebPagePreview = true,
-                        MessageText = response.Text,
-                        ParseMode = response.ParseMode
-                    }
-                });
+                        SourceUser = user,
+                        DatabaseInstance = Program.DB,
+                        Parameters = com[1],
+                        Target = "",
+                        Messenger = Program.Messenger,
+                        Bot = Bot,
+                        Message = null
+                    });
+                    results.Add(new InlineQueryResultArticle()
+                    {
+                        Description = c.Key.HelpText,
+                        Id = Loader.Commands.ToList().IndexOf(c).ToString(),
+                        Title = c.Key.Triggers[0],
+                        InputMessageContent = new InputTextMessageContent
+                        {
+                            DisableWebPagePreview = true,
+                            MessageText = response.Text,
+                            ParseMode = response.ParseMode
+                        }
+                    });
+                }
+                catch
+                {
+                    // ignored
+                }
             }
             var menu = results.Cast<InlineQueryResult>().ToArray();
             Bot.AnswerInlineQueryAsync(query.Id, menu, 0, true);

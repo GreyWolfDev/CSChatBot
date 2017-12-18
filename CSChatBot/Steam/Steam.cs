@@ -134,9 +134,10 @@ namespace Steam
                                 }
                             }
                         }
-                        catch
+                        catch (Exception e)
                         {
                             // ignored
+                            e = e;
                         }
                     }
 
@@ -172,20 +173,37 @@ namespace Steam
 
         private static dynamic GetAccountPricing(string id)
         {
-            string page = "";
-            using (var client = new WebClient())
+            try
             {
-                client.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
-                page = client.DownloadString($"https://steamdb.info/calculator/{id}/?cc=us");
+                string page = "";
+                using (var client = new WebClient())
+                {
+                    client.Headers.Add("User-Agent",
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
+                    page = client.DownloadString($"https://steamdb.info/calculator/{id}/?cc=us");
+                }
+
+                if (page.Contains("Steam could be down"))
+                {
+                    return new {total = "Unable to get stats", hours = "N/A"};
+                }
+
+                var total = page.Substring(page.IndexOf("<b class=\"number-price\">") +
+                                           "<b class=\"number-price\">".Length);
+                total = total.Substring(0, total.IndexOf("</b>"));
+                var hourRegex = new Regex("(<b>)(.*)\\n(<em>Hours on record</em>)");
+                var hours = hourRegex.Match(page).Value;
+
+                hours = hours.Substring(3);
+                hours = hours.Substring(0, hours.IndexOf("</b>"));
+
+                return new {total = total, hours = hours};
             }
-            var total = page.Substring(page.IndexOf("<b class=\"number-price\">") + "<b class=\"number-price\">".Length);
-            total = total.Substring(0, total.IndexOf("</b>"));
-            var hourRegex = new Regex("(<b>)(.*)\\n(<em>Hours on record</em>)");
-            var hours = hourRegex.Match(page).Value;
-            hours = hours.Substring(3);
-            hours = hours.Substring(0, hours.IndexOf("</b>"));
-           
-            return new { total = total, hours = hours };
+            catch (Exception e)
+            {
+                e = e;
+                return null;
+            }
         }
 
         private static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
