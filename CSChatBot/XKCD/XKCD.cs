@@ -28,6 +28,9 @@ namespace XKCD
         [ChatCommand(Triggers = new[] { "xkcd" }, HelpText = "Gets a random xkcd, or searches", Parameters = new[] { "none - random", "<search query>", "'new' - latest" })]
         public static CommandResponse GetXkcd(CommandEventArgs args)
         {
+            ServicePointManager.Expect100Continue = true;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            // Use SecurityProtocolType.Ssl3 if needed for compatibility reasons
             XkcdPost chosen;
             var current = JsonConvert.DeserializeObject<XkcdPost>(
                     new WebClient().DownloadString("https://xkcd.com/info.0.json"));
@@ -80,7 +83,13 @@ namespace XKCD
                     }
                 }
             }
-            return new CommandResponse($"{chosen.title}\n{chosen.alt}\n{chosen.img}");
+            return new CommandResponse($"{chosen.title}\n{chosen.alt}\n{chosen.img}")
+            {
+                ImageCaption = chosen.alt,
+                ImageUrl = chosen.img,
+                ImageDescription = chosen.alt,
+                ImageTitle = chosen.title
+            };
         }
     }
 

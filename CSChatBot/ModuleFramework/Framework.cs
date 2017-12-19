@@ -103,6 +103,10 @@ namespace ModuleFramework
         public ResponseLevel Level { get; set; }
         public Menu Menu { get; set; }
         public ParseMode ParseMode { get; set; }
+        public string ImageUrl { get; set; }
+        public string ImageTitle { get; set; }
+        public string ImageCaption { get; set; }
+        public string ImageDescription { get; set; }
         /// <summary>
         /// Sends a response through the bot
         /// </summary>
@@ -111,12 +115,13 @@ namespace ModuleFramework
         /// <param name="replyMarkup">Reply markup.  Optional</param>
         /// <param name="parseMode">How the text should be parsed</param>
 
-        public CommandResponse(string msg, ResponseLevel level = ResponseLevel.Public, Menu menu = null, ParseMode parseMode = ParseMode.Default)
+        public CommandResponse(string msg, ResponseLevel level = ResponseLevel.Public, Menu menu = null, ParseMode parseMode = ParseMode.Default, string imgUrl = null)
         {
             Text = msg;
             Level = level;
             Menu = menu;
             ParseMode = parseMode;
+            ImageUrl = imgUrl;
         }
     }
 

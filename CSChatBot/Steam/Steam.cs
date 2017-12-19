@@ -78,8 +78,26 @@ namespace Steam
         public static CommandResponse GetSteam(CommandEventArgs args)
         {
             if (String.IsNullOrEmpty(_steamKey)) return new CommandResponse("Ask an admin to set their Steam API key");
+
+            
+
             var user = args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
             var id = user.GetSetting<string>("SteamId", args.DatabaseInstance, "");
+            if (user.UserId == args.SourceUser.UserId & !String.IsNullOrEmpty(args.Parameters))
+            {
+                //they are looking up a specific user, let's try to find the id
+                //attempt to get the users id64
+                using (var wc = new WebClient())
+                {
+                    var build = new Builder(_steamKey);
+                    var userid = JsonConvert.DeserializeObject<ResolveVanityUrlResponse>(wc.DownloadString(build.CreateIDFinder(args.Parameters))).response;
+                    if (userid.success == 1)
+                    {
+                        id = userid.steamid;
+                    }
+                }
+            }
+            
             if (String.IsNullOrEmpty(id))
             {
                 return new CommandResponse($"Please set your steamid using /setsteamid <your profile url>");
@@ -97,7 +115,7 @@ namespace Steam
                 //build our response
                 var response = $"{steamuser.personaname}\n";
                 var pub = steamuser.communityvisibilitystate == 3;
-                
+                var description = UnixTimeStampToDateTime(steamuser.timecreated).ToString();
                 if (!pub)
                 {
                     response += $"{steamuser.profileurl}\nThis profile is set to private, cannot get any more information.";
@@ -111,6 +129,7 @@ namespace Steam
                     if (isPlaying)
                     {
                         response += $"Currently Playing: {steamuser.gameextrainfo}\n";
+                        description = $"Currently Playing: {steamuser.gameextrainfo}\n";
                         var game = JsonConvert.DeserializeObject<SchemaResponse>(wc.DownloadString(build.CreateSchemaUrl(steamuser.gameid))).game;
                         response += $"http://store.steampowered.com/app/" + steamuser.gameid + "\n";
                         try
@@ -146,11 +165,13 @@ namespace Steam
                     //get games list
                     var gameList = JsonConvert.DeserializeObject<GameList>(wc.DownloadString(build.CreateGameListUrl(id))).response;
                     response += $"\nUser has {gameList.game_count} games in library\n";
+                    description += $"\n{gameList.game_count} games in library\n";
                     gameList = JsonConvert.DeserializeObject<GameList>(wc.DownloadString(build.CreateRecentGameListUrl(id))).response;
 
-                    var prices = GetAccountPricing(id);
-                    response += $"Total value of game library: {prices.total}\n" +
-                                $"Total hours played: {prices.hours}\n\n";
+                    //STEAM DB is being a jerk and not allowing bots through...
+                    //var prices = GetAccountPricing(id);
+                    //response += $"Total value of game library: {prices.total}\n" +
+                    //            $"Total hours played: {prices.hours}\n\n";
                     
 
                     if (gameList.games != null)
@@ -163,7 +184,7 @@ namespace Steam
                     }
                 }
 
-                return new CommandResponse(response);
+                return new CommandResponse(response){ImageUrl = steamuser.avatar, ImageDescription = description, ImageTitle = steamuser.personaname};
             }
 
             
@@ -173,37 +194,20 @@ namespace Steam
 
         private static dynamic GetAccountPricing(string id)
         {
-            try
+            string page = "";
+            using (var client = new CookieAwareWebClient())
             {
-                string page = "";
-                using (var client = new WebClient())
-                {
-                    client.Headers.Add("User-Agent",
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
-                    page = client.DownloadString($"https://steamdb.info/calculator/{id}/?cc=us");
-                }
-
-                if (page.Contains("Steam could be down"))
-                {
-                    return new {total = "Unable to get stats", hours = "N/A"};
-                }
-
-                var total = page.Substring(page.IndexOf("<b class=\"number-price\">") +
-                                           "<b class=\"number-price\">".Length);
-                total = total.Substring(0, total.IndexOf("</b>"));
-                var hourRegex = new Regex("(<b>)(.*)\\n(<em>Hours on record</em>)");
-                var hours = hourRegex.Match(page).Value;
-
-                hours = hours.Substring(3);
-                hours = hours.Substring(0, hours.IndexOf("</b>"));
-
-                return new {total = total, hours = hours};
+                client.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
+                page = client.DownloadString($"https://steamdb.info/calculator/{id}/?cc=us");
             }
-            catch (Exception e)
-            {
-                e = e;
-                return null;
-            }
+            var total = page.Substring(page.IndexOf("<b class=\"number-price\">") + "<b class=\"number-price\">".Length);
+            total = total.Substring(0, total.IndexOf("</b>"));
+            var hourRegex = new Regex("(<b>)(.*)\\n(<em>Hours on record</em>)");
+            var hours = hourRegex.Match(page).Value;
+            hours = hours.Substring(3);
+            hours = hours.Substring(0, hours.IndexOf("</b>"));
+           
+            return new { total = total, hours = hours };
         }
 
         private static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
@@ -279,6 +283,21 @@ namespace Steam
                 public static string GetUserStatsForGame = Base + "GetUserStatsForGame/v0002/?";
             }
 
+        }
+
+        public class CookieAwareWebClient : WebClient
+        {
+            public CookieContainer CookieContainer { get; set; } = new CookieContainer();
+
+            protected override WebRequest GetWebRequest(Uri uri)
+            {
+                WebRequest request = base.GetWebRequest(uri);
+                if (request is HttpWebRequest)
+                {
+                    (request as HttpWebRequest).CookieContainer = CookieContainer;
+                }
+                return request;
+            }
         }
         #endregion
     }
