@@ -43,7 +43,7 @@ namespace Steam
             if (String.IsNullOrEmpty(_steamKey)) return new CommandResponse("Ask an admin to set their Steam API key");
 
             var u = args.SourceUser;
-            
+
             var input = args.Parameters;
             if (input.Contains(" "))
                 input = input.Split(' ')[0];
@@ -79,7 +79,7 @@ namespace Steam
         {
             if (String.IsNullOrEmpty(_steamKey)) return new CommandResponse("Ask an admin to set their Steam API key");
 
-            
+
 
             var user = args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
             var id = user.GetSetting<string>("SteamId", args.DatabaseInstance, "");
@@ -97,13 +97,13 @@ namespace Steam
                     }
                 }
             }
-            
+
             if (String.IsNullOrEmpty(id))
             {
                 return new CommandResponse($"Please set your steamid using /setsteamid <your profile url>");
             }
 
-            
+
 
             using (var wc = new WebClient())
             {
@@ -122,7 +122,7 @@ namespace Steam
                 }
                 else
                 {
-                    
+
 
                     var isPlaying = !String.IsNullOrEmpty(steamuser.gameextrainfo);
                     response += $"Profile created: {UnixTimeStampToDateTime(steamuser.timecreated)}\n";
@@ -163,16 +163,35 @@ namespace Steam
                     response += $"\nUser Profile: {steamuser.profileurl}\n";
 
                     //get games list
-                    var gameList = JsonConvert.DeserializeObject<GameList>(wc.DownloadString(build.CreateGameListUrl(id))).response;
+                    var u = build.CreateGameListUrl(id);
+                    var gameList = JsonConvert.DeserializeObject<GameList>(wc.DownloadString(u)).response;
                     response += $"\nUser has {gameList.game_count} games in library\n";
                     description += $"\n{gameList.game_count} games in library\n";
                     gameList = JsonConvert.DeserializeObject<GameList>(wc.DownloadString(build.CreateRecentGameListUrl(id))).response;
 
                     //STEAM DB is being a jerk and not allowing bots through...
-                    //var prices = GetAccountPricing(id);
+                    //trying to do it myself, however the api keeps returning Internal Server Errors on most games, but not all....  USELESS!
+                    //var nonFreeGameList = JsonConvert.DeserializeObject<GameList>(wc.DownloadString(u.Replace("&include_played_free_games=1", ""))).response;
+                    //var total = 0;
+                    //foreach (var g in nonFreeGameList.games)
+                    //{
+                    //    u = build.CreateGamePriceUrl(gameList.games[0].appid);
+                    //    try
+                    //    {
+                    //        var prices = JsonConvert.DeserializeObject<GamePrices>(wc.DownloadString(u));
+                    //        total += prices.result.assets.
+                    //            }
+                    //    catch
+                    //    {
+
+                    //    }
+                    //}
+
+
+                    //GetAccountPricing(id);
                     //response += $"Total value of game library: {prices.total}\n" +
                     //            $"Total hours played: {prices.hours}\n\n";
-                    
+
 
                     if (gameList.games != null)
                     {
@@ -184,16 +203,17 @@ namespace Steam
                     }
                 }
 
-                return new CommandResponse(response){ImageUrl = steamuser.avatar, ImageDescription = description, ImageTitle = steamuser.personaname};
+                return new CommandResponse(response) { ImageUrl = steamuser.avatar, ImageDescription = description, ImageTitle = steamuser.personaname };
             }
 
-            
 
-            
+
+
         }
 
         private static dynamic GetAccountPricing(string id)
         {
+
             string page = "";
             using (var client = new CookieAwareWebClient())
             {
@@ -206,8 +226,10 @@ namespace Steam
             var hours = hourRegex.Match(page).Value;
             hours = hours.Substring(3);
             hours = hours.Substring(0, hours.IndexOf("</b>"));
-           
+
             return new { total = total, hours = hours };
+
+
         }
 
         private static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
@@ -228,6 +250,11 @@ namespace Steam
             public Builder(string key)
             {
                 Key = key;
+            }
+
+            public string CreateGamePriceUrl(int appid)
+            {
+                return $"{BaseUrl}{Api.Economy.GetAssetPrices}key={Key}&appid={appid}";
             }
             public string CreateSummaryUrl(string userid)
             {
@@ -267,6 +294,12 @@ namespace Steam
                 private const string Base = "ISteamUser/";
                 public static string GetPlayerSummaries = Base + "GetPlayerSummaries/v0001/?";
                 public static string ResolveVanityUrl = Base + "ResolveVanityURL/v0001/?";
+            }
+
+            public static class Economy
+            {
+                private const string Base = "ISteamEconomy/";
+                public static string GetAssetPrices = Base + "GetAssetPrices/v0001/?";
             }
 
             public static class PlayerService
