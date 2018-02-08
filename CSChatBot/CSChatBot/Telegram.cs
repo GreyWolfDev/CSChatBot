@@ -14,7 +14,7 @@ using Telegram.Bot.Args;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
-using Telegram.Bot.Types.InputMessageContents;
+using System.Net.Http;
 using Telegram.Bot.Types.ReplyMarkups;
 #pragma warning disable 4014
 
@@ -34,7 +34,7 @@ namespace CSChatBot
                 //Load in the modules
                 Loader.LoadModules();
 
-                await Bot.SetWebhookAsync();
+                await Bot.DeleteWebhookAsync();
 
 
                 Me = Bot.GetMeAsync().Result;
@@ -82,7 +82,7 @@ namespace CSChatBot
                         Query = query
                     };
                     var response = callback.Value.Invoke(eArgs);
-                    if (!String.IsNullOrWhiteSpace(response.Text))
+                    if (!String.IsNullOrWhiteSpace(response?.Text))
                     {
                         Send(response, query.Message, true);
                     }
@@ -117,7 +117,7 @@ namespace CSChatBot
             var user = UserHelper.GetTelegramUser(Program.DB, null, query);
             if (user.Grounded)
             {
-                Bot.AnswerInlineQueryAsync(query.Id, new InlineQueryResult[]
+                Bot.AnswerInlineQueryAsync(query.Id, new InlineQueryResultBase[]
                 {
                     new InlineQueryResultArticle()
                     {
@@ -140,7 +140,7 @@ namespace CSChatBot
                 Loader.Commands.Where(x => x.Key.DevOnly != true && x.Key.BotAdminOnly != true && x.Key.GroupAdminOnly != true & !x.Key.HideFromInline & !x.Key.DontSearchInline &&
                 x.Key.Triggers.Any(t => t.ToLower().Contains(com[0].ToLower())) & !x.Key.DontSearchInline).ToList();
             choices.AddRange(Loader.Commands.Where(x => x.Key.DontSearchInline && x.Key.Triggers.Any(t => String.Equals(t, com[0], StringComparison.InvariantCultureIgnoreCase))));
-            var results = new List<InlineQueryResult>();
+            var results = new List<InlineQueryResultBase>();
             foreach (var c in choices)
             {
                 var response = c.Value.Invoke(new CommandEventArgs
@@ -202,8 +202,8 @@ namespace CSChatBot
             try
             {
                 var update = updateEventArgs.Update;
-                if (update.Type == UpdateType.InlineQueryUpdate) return;
-                if (update.Type == UpdateType.CallbackQueryUpdate) return;
+                if (update.Type == UpdateType.InlineQuery) return;
+                if (update.Type == UpdateType.CallbackQuery) return;
                 if (!(update.Message?.Date > DateTime.UtcNow.AddSeconds(-15)))
                 {
                     //Log.WriteLine("Ignoring message due to old age: " + update.Message.Date);
@@ -227,7 +227,7 @@ namespace CSChatBot
 
         internal static void Handle(Update update)
         {
-            if (update.Message.Type == MessageType.TextMessage)
+            if (update.Message.Type == MessageType.Text)
             {
                 //TODO: do something with this update
                 var msg = (update.Message.From.Username ?? update.Message.From.FirstName) + ": " + update.Message.Text;
@@ -409,8 +409,10 @@ namespace CSChatBot
                 do
                 {
                     var cur = menu.Buttons[i];
-                    row.Add(new InlineKeyboardButton(cur.Text, $"{cur.Trigger}|{cur.ExtraData}")
+                    row.Add(new InlineKeyboardButton
                     {
+                        Text = cur.Text,
+                        CallbackData = $"{cur.Trigger}|{cur.ExtraData}",
                         Url = cur.Url
                     });
                     i++;

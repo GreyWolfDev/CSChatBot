@@ -46,12 +46,13 @@ namespace CSChatBot.Modules
             //we can also interact directly with the bot api as such
             args.Bot.SendTextMessageAsync(args.Message.Chat.Id, "This is a test button", replyMarkup: new InlineKeyboardMarkup(new[]
             {
-                new InlineKeyboardButton("Grey Wolf Dev Channel")
+                new InlineKeyboardButton()
                 {
+                    Text = "Grey Wolf Dev Channel",
                     Url="https://t.me/werewolfdev"
                 },
                 //can also use conditional statements when building menus
-                true ? new InlineKeyboardButton("Para's Channel") {Url="https://t.me/para949"} : null
+                true ? new InlineKeyboardButton() {Text = "Para's Channel", Url="https://t.me/para949"} : null
             }));
 
             // of course, if you saved the bot in your constructor, you can also use that
@@ -91,7 +92,7 @@ namespace CSChatBot.Modules
             //handle an update here
 
             //I highly recommend you ignore old messages
-            if (u.Type == UpdateType.MessageUpdate)
+            if (u.Type == UpdateType.Message)
             {
                 if (u.Message.Date < DateTime.UtcNow.AddSeconds(-15)) return;
 
