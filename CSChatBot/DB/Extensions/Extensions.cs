@@ -45,34 +45,34 @@ namespace DB.Extensions
         /// <returns></returns>
         public static T GetSetting<T>(this User user, string field, Instance db, object def)
         {
-            //if (db.Connection.State != ConnectionState.Open)
-            //    db.Connection.Open();
-            ////verify settings exist
-            //var columns = new SQLiteCommand("PRAGMA table_info(users)", db.Connection).ExecuteReader();
-            //var t = default(T);
+            if (db.Connection.State != ConnectionState.Open)
+                db.Connection.Open();
+            //verify settings exist
+            var columns = new SQLiteCommand("PRAGMA table_info(users)", db.Connection).ExecuteReader();
+            var t = default(T);
 
-            //while (columns.Read())
-            //{
-            //    if (String.Equals(columns[1].ToString(), field))
-            //    {
-            //        var result = new SQLiteCommand($"select {field} from users where ID = {user.ID}", db.Connection).ExecuteScalar();
-            //        if (t != null && t.GetType() == typeof(bool))
-            //        {
-            //            result = (result.ToString() == "1"); //make it a boolean value
-            //        }
-            //        return (T)result;
-            //    }
-            //}
-            //var type = "BLOB";
-            //if (t == null)
-            //    type = "TEXT";
-            //else if (t.GetType() == typeof(int))
-            //    type = "INTEGER";
-            //else if (t.GetType() == typeof(bool))
-            //    type = "INTEGER";
+            while (columns.Read())
+            {
+                if (String.Equals(columns[1].ToString(), field))
+                {
+                    var result = new SQLiteCommand($"select {field} from users where ID = {user.ID}", db.Connection).ExecuteScalar();
+                    if (t != null && t.GetType() == typeof(bool))
+                    {
+                        result = (result.ToString() == "1"); //make it a boolean value
+                    }
+                    return (T)result;
+                }
+            }
+            var type = "BLOB";
+            if (t == null)
+                type = "TEXT";
+            else if (t.GetType() == typeof(int))
+                type = "INTEGER";
+            else if (t.GetType() == typeof(bool))
+                type = "INTEGER";
 
-            //new SQLiteCommand($"ALTER TABLE users ADD COLUMN {field} {type} DEFAULT {(type == "INTEGER" ? def : $"'{def}'")};", db.Connection)
-            //    .ExecuteNonQuery();
+            new SQLiteCommand($"ALTER TABLE users ADD COLUMN {field} {type} DEFAULT {(type == "INTEGER" ? def : $"'{def}'")};", db.Connection)
+                .ExecuteNonQuery();
             return (T)def;
 
         }
