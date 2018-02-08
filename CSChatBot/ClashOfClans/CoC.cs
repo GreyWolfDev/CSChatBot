@@ -52,11 +52,12 @@ namespace ClashOfClans
             if (String.IsNullOrEmpty(_token)) return new CommandResponse("Ask the bot owner to set their CoC API key");
             var u = args.SourceUser;
             var clantag = u.GetSetting<string>("CoCClan", args.DatabaseInstance, null);
+            
             if (String.IsNullOrEmpty(clantag))
             {
                 return new CommandResponse("Please set your clan tag with /setclan");
             }
-            
+
             using (var wc = new HttpClient())
             {
                 wc.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
@@ -73,7 +74,7 @@ namespace ClashOfClans
                 {
                     return new CommandResponse($"Unable to find war information");
                 }
-                
+
                 //let's take a quick look
                 var state = war.state;
                 state = char.ToUpper(state[0]) + state.Substring(1);
@@ -112,14 +113,14 @@ namespace ClashOfClans
                                $"\n----------------------------------" +
                                $"\nMembers:" +
                                $"\n----------------------------------";
-                
+
                 foreach (var member in war.clan.members.OrderBy(x => x.mapPosition))
                 {
                     response += $"\n{member.name}" +
                              $"\n{member.attacks?.Length ?? 0} ⚔️ - {member.attacks?.Sum(x => x.stars) ?? 0} ⭐️ ({member.attacks?.Average(x => x.destructionPercentage) ?? 0:N0}% damage)" +
                              $"\n--------------------";
                 }
-                
+
 
                 return new CommandResponse(response)
                 {
@@ -128,10 +129,10 @@ namespace ClashOfClans
                     ImageTitle = state
                 };
             }
-            
+
         }
 
-        [ChatCommand(Triggers = new[] {"setclan"}, HideFromInline = true,
+        [ChatCommand(Triggers = new[] { "setclan" }, HideFromInline = true,
             HelpText = "Sets your clan tag for Clash of Clans")]
         public static CommandResponse SetClan(CommandEventArgs args)
         {
@@ -142,8 +143,8 @@ namespace ClashOfClans
             var input = args.Parameters.Trim();
             if (!input.StartsWith("#"))
                 input = "#" + input;
-            
-            
+
+
             //Validate clan tag
             using (var wc = new HttpClient())
             {
@@ -161,7 +162,7 @@ namespace ClashOfClans
                 {
                     return new CommandResponse($"Unable to find clan '{input}'");
                 }
-                
+
                 if (clan.reason != null)
                 {
                     return new CommandResponse($"Unable to find clan '{input}'.  Reason: {clan.reason}");

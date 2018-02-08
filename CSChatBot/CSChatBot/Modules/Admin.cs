@@ -59,17 +59,17 @@ namespace CSChatBot.Modules
             return new CommandResponse($"{target.Name} is ungrounded!");
         }
 
-        [ChatCommand(Triggers = new[] {"sql"}, DevOnly = true, Parameters = new[] { "<sql command>"})]
-        public static CommandResponse RunSql(CommandEventArgs args)
-        {
-            return new CommandResponse($"{args.DatabaseInstance.ExecuteNonQuery(args.Parameters)} records changed");
-        }
+        //[ChatCommand(Triggers = new[] {"sql"}, DevOnly = true, Parameters = new[] { "<sql command>"})]
+        //public static CommandResponse RunSql(CommandEventArgs args)
+        //{
+        //    return new CommandResponse($"{args.DatabaseInstance.ExecuteNonQuery(args.Parameters)} records changed");
+        //}
 
-        [ChatCommand(Triggers = new[] { "query" }, DevOnly = true, Parameters = new[] {"<select statement>" })]
-        public static CommandResponse RunQuery(CommandEventArgs args)
-        {
-            return new CommandResponse(args.DatabaseInstance.ExecuteQuery(args.Parameters));
-        }
+        //[ChatCommand(Triggers = new[] { "query" }, DevOnly = true, Parameters = new[] {"<select statement>" })]
+        //public static CommandResponse RunQuery(CommandEventArgs args)
+        //{
+        //    return new CommandResponse(args.DatabaseInstance.ExecuteQuery(args.Parameters));
+        //}
 
         [ChatCommand(Triggers = new[] { "cleandb", }, DevOnly = true, HelpText = "Cleans all users with UserID (0)")]
         public static CommandResponse CleanDatabase(CommandEventArgs args)

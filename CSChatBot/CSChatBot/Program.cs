@@ -31,7 +31,7 @@ namespace CSChatBot
         }
 
         public static Log Log = new Log(Path.Combine(RootDirectory, "Logs"));
-        public static Instance DB = new Instance(Path.Combine(RootDirectory, "BotDB.sqlite"), Log.Path);
+        public static Instance DB = new Instance(Path.Combine(RootDirectory, "BotDB.db"), Log.Path);
         public static Setting LoadedSetting;
         public static ModuleMessenger Messenger = new ModuleMessenger();
 

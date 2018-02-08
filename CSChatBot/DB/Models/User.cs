@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DB.Models
 {
-    public class User
+    public partial class User
     {
         /// <summary>
         /// The database id of the user

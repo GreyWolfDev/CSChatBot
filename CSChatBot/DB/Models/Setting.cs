@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DB.Models
 {
-    public class Setting
+    public partial class Setting
     {
         /// <summary>
         /// DB Id of the setting

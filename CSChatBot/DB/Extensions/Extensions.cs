@@ -10,6 +10,7 @@ using DB.Models;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using User = DB.Models.User;
+using LiteDB;
 
 namespace DB.Extensions
 {
@@ -19,35 +20,19 @@ namespace DB.Extensions
 
         public static void Save(this User u, Instance db)
         {
-            if (u.ID == null || !ExistsInDb(u, db))
-            {
-                //need to insert
-                db.ExecuteNonQuery(
-                    "insert into users (Name, UserId, UserName, FirstSeen, LastHeard, Points, Location, Debt, LastState, Greeting, Grounded, GroundedBy, IsBotAdmin, LinkingKey, Description) VALUES (@Name, @UserId, @UserName, @FirstSeen, @LastHeard, @Points, @Location, @Debt, @LastState, @Greeting, @Grounded, @GroundedBy, @IsBotAdmin, @LinkingKey, @Description)",
-                    u);
-                u.ID =
-                    db.Connection.Query<int>(
-                        $"SELECT ID FROM Users WHERE UserId = @UserId", u)
-                        .First();
-            }
-            else
-            {
-                db.ExecuteNonQuery(
-                    "UPDATE users SET Name = @Name, UserId = @UserId, UserName = @UserName, FirstSeen = @FirstSeen, LastHeard = @LastHeard, Points = @Points, Location = @Location, Debt = @Debt, LastState = @LastState, Greeting = @Greeting, Grounded = @Grounded, GroundedBy = @GroundedBy, IsBotAdmin = @IsBotAdmin, LinkingKey = @LinkingKey, Description = @Description WHERE ID = @ID",
-                    u);
-            }
+            db.Database.GetCollection<User>().Upsert(u);
         }
 
-        public static bool ExistsInDb(this User user, Instance db)
-        {
-            var rows = db.Connection.Query($"SELECT COUNT(1) as 'Count' FROM Users WHERE ID = '{user.ID}'");
-            return (int)rows.First().Count > 0;
-        }
+        //public static bool ExistsInDb(this User user, Instance db)
+        //{
+        //    var rows = db.Connection.Query($"SELECT COUNT(1) as 'Count' FROM Users WHERE ID = '{user.ID}'");
+        //    return (int)rows.First().Count > 0;
+        //}
 
-        public static void RemoveFromDb(this User user, Instance db)
-        {
-            db.ExecuteNonQuery("DELETE FROM Users WHERE ID = @ID", user);
-        }
+        //public static void RemoveFromDb(this User user, Instance db)
+        //{
+        //    db.ExecuteNonQuery("DELETE FROM Users WHERE ID = @ID", user);
+        //}
 
         /// <summary>
         /// Gets a user setting from the database
@@ -60,34 +45,34 @@ namespace DB.Extensions
         /// <returns></returns>
         public static T GetSetting<T>(this User user, string field, Instance db, object def)
         {
-            if (db.Connection.State != ConnectionState.Open)
-                db.Connection.Open();
-            //verify settings exist
-            var columns = new SQLiteCommand("PRAGMA table_info(users)", db.Connection).ExecuteReader();
-            var t = default(T);
+            //if (db.Connection.State != ConnectionState.Open)
+            //    db.Connection.Open();
+            ////verify settings exist
+            //var columns = new SQLiteCommand("PRAGMA table_info(users)", db.Connection).ExecuteReader();
+            //var t = default(T);
 
-            while (columns.Read())
-            {
-                if (String.Equals(columns[1].ToString(), field))
-                {
-                    var result = new SQLiteCommand($"select {field} from users where ID = {user.ID}", db.Connection).ExecuteScalar();
-                    if (t != null && t.GetType() == typeof(bool))
-                    {
-                        result = (result.ToString() == "1"); //make it a boolean value
-                    }
-                    return (T)result;
-                }
-            }
-            var type = "BLOB";
-            if (t == null)
-                type = "TEXT";
-            else if (t.GetType() == typeof(int))
-                type = "INTEGER";
-            else if (t.GetType() == typeof(bool))
-                type = "INTEGER";
-            
-            new SQLiteCommand($"ALTER TABLE users ADD COLUMN {field} {type} DEFAULT {(type == "INTEGER" ? def : $"'{def}'")};", db.Connection)
-                .ExecuteNonQuery();
+            //while (columns.Read())
+            //{
+            //    if (String.Equals(columns[1].ToString(), field))
+            //    {
+            //        var result = new SQLiteCommand($"select {field} from users where ID = {user.ID}", db.Connection).ExecuteScalar();
+            //        if (t != null && t.GetType() == typeof(bool))
+            //        {
+            //            result = (result.ToString() == "1"); //make it a boolean value
+            //        }
+            //        return (T)result;
+            //    }
+            //}
+            //var type = "BLOB";
+            //if (t == null)
+            //    type = "TEXT";
+            //else if (t.GetType() == typeof(int))
+            //    type = "INTEGER";
+            //else if (t.GetType() == typeof(bool))
+            //    type = "INTEGER";
+
+            //new SQLiteCommand($"ALTER TABLE users ADD COLUMN {field} {type} DEFAULT {(type == "INTEGER" ? def : $"'{def}'")};", db.Connection)
+            //    .ExecuteNonQuery();
             return (T)def;
 
         }
@@ -353,38 +338,38 @@ namespace DB.Extensions
 
         #endregion
 
-        public static string ExecuteQuery(this Instance db, string commandText, object param = null)
-        {
-            // Ensure we have a connection
-            if (db.Connection == null)
-            {
-                throw new NullReferenceException(
-                    "Please provide a connection");
-            }
+        //public static string ExecuteQuery(this Instance db, string commandText, object param = null)
+        //{
+        //    // Ensure we have a connection
+        //    if (db.Connection == null)
+        //    {
+        //        throw new NullReferenceException(
+        //            "Please provide a connection");
+        //    }
 
-            // Ensure that the connection state is Open
-            if (db.Connection.State != ConnectionState.Open)
-            {
-                db.Connection.Open();
-            }
-            var reader = db.Connection.ExecuteReader(commandText, param);
-            var response = "";
-            for (int i = 0; i < reader.FieldCount; i++)
-            {
-                response += $"{reader.GetName(i)} - ";
-            }
-            response += "\n";
-            while (reader.Read())
-            {
-                for (int i = 0; i < reader.FieldCount; i++)
-                {
-                    response += $"{reader[i]} - ";
-                }
-                response += "\n";
-            }
-            // Use Dapper to execute the given query
-            return response;
-        }
+        //    // Ensure that the connection state is Open
+        //    if (db.Connection.State != ConnectionState.Open)
+        //    {
+        //        db.Connection.Open();
+        //    }
+        //    var reader = db.Connection.ExecuteReader(commandText, param);
+        //    var response = "";
+        //    for (int i = 0; i < reader.FieldCount; i++)
+        //    {
+        //        response += $"{reader.GetName(i)} - ";
+        //    }
+        //    response += "\n";
+        //    while (reader.Read())
+        //    {
+        //        for (int i = 0; i < reader.FieldCount; i++)
+        //        {
+        //            response += $"{reader[i]} - ";
+        //        }
+        //        response += "\n";
+        //    }
+        //    // Use Dapper to execute the given query
+        //    return response;
+        //}
 
         public static int ExecuteNonQuery(this Instance db, string commandText, object param = null)
         {
