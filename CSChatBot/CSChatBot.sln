@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.10
+VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSChatBot", "CSChatBot\CSChatBot.csproj", "{5C0AE7A1-BE52-4EAF-B658-053A4648C39C}"
 EndProject
@@ -26,6 +26,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeepDream", "DeepDream\DeepDream.csproj", "{74D4C07E-3216-4CC2-9D56-30D8EF54DC8D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClashOfClans", "ClashOfClans\ClashOfClans.csproj", "{0768731D-96D3-486F-9F6C-908745FD9B4C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GroupManagement", "GroupManagement\GroupManagement.csproj", "{1DC83EE4-7778-4B00-8A86-236E78C04715}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -81,6 +83,10 @@ Global
 		{0768731D-96D3-486F-9F6C-908745FD9B4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0768731D-96D3-486F-9F6C-908745FD9B4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0768731D-96D3-486F-9F6C-908745FD9B4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1DC83EE4-7778-4B00-8A86-236E78C04715}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1DC83EE4-7778-4B00-8A86-236E78C04715}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1DC83EE4-7778-4B00-8A86-236E78C04715}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1DC83EE4-7778-4B00-8A86-236E78C04715}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

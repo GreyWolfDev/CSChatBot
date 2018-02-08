@@ -59,6 +59,7 @@ namespace CSChatBot
         private static void BotOnOnCallbackQuery(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
         {
             var query = callbackQueryEventArgs.CallbackQuery;
+            
             //extract the trigger
             var trigger = query.Data.Split('|')[0];
             var args = query.Data.Replace(trigger + "|", "");
