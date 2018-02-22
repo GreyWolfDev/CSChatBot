@@ -14,6 +14,7 @@ using System.CodeDom.Compiler;
 using System.Diagnostics;
 using Telegram.Bot.Types.Enums;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace CSChatBot.Modules
 {
@@ -119,9 +120,41 @@ namespace CSChatBot.Modules
                 using System.IO;
                 using System.Net;
                 using System.Threading;
+                using Telegram.Bot.Types.Enums;
+                using Telegram.Bot.Types;
+                using Telegram.Bot;
                 class Program {
                     public static void Main(string[] args) {
                         " + args.Parameters + @"
+                    }
+                }").Result, parseMode: ParseMode.Markdown);
+        }
+
+        [ChatCommand(Triggers = new[] { "tg" }, DevOnly = true, AllowInlineAdmin = true)]
+        public static CommandResponse EmulateTG(CommandEventArgs args)
+        {
+            var code = args.Parameters;
+            var rgx = new Regex("(bot.).*(Async).*(\\))(?=;)");
+            var add = "var r = $&.Result";
+            code = rgx.Replace(code, add);
+            return new CommandResponse($"``` {code} ```\n" + CompileCs(
+                @"using System.Linq;
+                using System;
+                using System.Collections.Generic;
+                using System.Diagnostics;
+                using System.IO;
+                using System.Net;
+                using System.Threading;
+                using Telegram.Bot.Types.Enums;
+                using Telegram.Bot.Types;
+                using Telegram.Bot;
+                class Program {
+                    public static void Main(string[] args) {
+                        var bot = new TelegramBotClient(""" + Program.LoadedSetting.TelegramBotAPIKey + @""");
+                        try{" + code + @"}
+                        catch(AggregateException e){
+                        Console.WriteLine(e.InnerExceptions[0].Message);
+                        }
                     }
                 }").Result, parseMode: ParseMode.Markdown);
         }
@@ -130,8 +163,8 @@ namespace CSChatBot.Modules
         {
             try
             {
-                var csc = new CSharpCodeProvider(new Dictionary<string, string>() { { "CompilerVersion", "v3.5" } });
-                var parameters = new CompilerParameters(new[] { "mscorlib.dll", "System.Core.dll", "System.dll", "System.Data.dll" }, Path.Combine(Program.RootDirectory, "foo.exe"), true);
+                var csc = new CSharpCodeProvider(new Dictionary<string, string>() { { "CompilerVersion", "v4.0" } });
+                var parameters = new CompilerParameters(new[] { "mscorlib.dll", "System.Core.dll", "System.dll", "System.Data.dll", "Telegram.Bot.dll", "Newtonsoft.Json.dll", "System.Net.Http.dll" }, Path.Combine(Program.RootDirectory, "foo.exe"), true);
                 parameters.GenerateExecutable = true;
                 CompilerResults results = csc.CompileAssemblyFromSource(parameters, code);
                 var result = new StringBuilder();
