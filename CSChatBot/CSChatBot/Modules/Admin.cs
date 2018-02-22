@@ -13,6 +13,7 @@ using Microsoft.CSharp;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
 using Telegram.Bot.Types.Enums;
+using System.IO;
 
 namespace CSChatBot.Modules
 {
@@ -24,7 +25,7 @@ namespace CSChatBot.Modules
 
         }
 
-        [ChatCommand(Triggers = new[] {"ground", "finishhim!", "kthxbai"}, BotAdminOnly = true, HelpText = "Stops a user from using the bot")]
+        [ChatCommand(Triggers = new[] { "ground", "finishhim!", "kthxbai" }, BotAdminOnly = true, HelpText = "Stops a user from using the bot")]
         public static CommandResponse GroundUser(CommandEventArgs args)
         {
             var target = args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
@@ -42,7 +43,7 @@ namespace CSChatBot.Modules
             return new CommandResponse($"{target.Name} is grounded!");
         }
 
-        [ChatCommand(Triggers = new[] { "unground", "izoknaow" }, BotAdminOnly = true, HelpText = "Allows user to use the bot again", Parameters = new[]{"<userid>", "<@username>", "as a reply"})]
+        [ChatCommand(Triggers = new[] { "unground", "izoknaow" }, BotAdminOnly = true, HelpText = "Allows user to use the bot again", Parameters = new[] { "<userid>", "<@username>", "as a reply" })]
         public static CommandResponse UngroundUser(CommandEventArgs args)
         {
             var target = args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
@@ -60,13 +61,13 @@ namespace CSChatBot.Modules
             return new CommandResponse($"{target.Name} is ungrounded!");
         }
 
-        [ChatCommand(Triggers = new[] {"sql"}, DevOnly = true, Parameters = new[] { "<sql command>"})]
+        [ChatCommand(Triggers = new[] { "sql" }, DevOnly = true, Parameters = new[] { "<sql command>" })]
         public static CommandResponse RunSql(CommandEventArgs args)
         {
             return new CommandResponse($"{args.DatabaseInstance.ExecuteNonQuery(args.Parameters)} records changed");
         }
 
-        [ChatCommand(Triggers = new[] { "query" }, DevOnly = true, Parameters = new[] {"<select statement>" })]
+        [ChatCommand(Triggers = new[] { "query" }, DevOnly = true, Parameters = new[] { "<select statement>" })]
         public static CommandResponse RunQuery(CommandEventArgs args)
         {
             return new CommandResponse(args.DatabaseInstance.ExecuteQuery(args.Parameters));
@@ -94,7 +95,7 @@ namespace CSChatBot.Modules
             }
             return new CommandResponse(null);
         }
-        
+
         [ChatCommand(Triggers = new[] { "rembotadmin", "remadmin" }, DevOnly = true, Parameters = new[] { "<userid>", "<@username>", "as a reply" })]
         public static CommandResponse RemoveBotAdmin(CommandEventArgs args)
         {
@@ -107,7 +108,7 @@ namespace CSChatBot.Modules
             return new CommandResponse(null);
         }
 
-        [ChatCommand(Triggers = new[] { "cs"}, DevOnly = true, AllowInlineAdmin = true)]
+        [ChatCommand(Triggers = new[] { "cs" }, DevOnly = true, AllowInlineAdmin = true)]
         public static CommandResponse RunCsCode(CommandEventArgs args)
         {
             return new CommandResponse($"``` {args.Parameters} ```\n" + CompileCs(
@@ -130,7 +131,7 @@ namespace CSChatBot.Modules
             try
             {
                 var csc = new CSharpCodeProvider(new Dictionary<string, string>() { { "CompilerVersion", "v3.5" } });
-                var parameters = new CompilerParameters(new[] { "mscorlib.dll", "System.Core.dll", "System.dll", "System.Data.dll" }, "foo.exe", true);
+                var parameters = new CompilerParameters(new[] { "mscorlib.dll", "System.Core.dll", "System.dll", "System.Data.dll" }, Path.Combine(Program.RootDirectory, "foo.exe"), true);
                 parameters.GenerateExecutable = true;
                 CompilerResults results = csc.CompileAssemblyFromSource(parameters, code);
                 var result = new StringBuilder();
@@ -144,10 +145,11 @@ namespace CSChatBot.Modules
                 {
                     StartInfo = new ProcessStartInfo
                     {
-                        FileName = "foo.exe",
+                        FileName = Path.Combine(Program.RootDirectory, "foo.exe"),
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
-                        CreateNoWindow = true
+                        CreateNoWindow = true,
+                        WorkingDirectory = Program.RootDirectory
                     }
                 };
 
@@ -160,7 +162,7 @@ namespace CSChatBot.Modules
                 }
                 return result.ToString();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 return $"{e.Message}\n{e.StackTrace}";
             }

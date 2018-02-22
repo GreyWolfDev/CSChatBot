@@ -140,7 +140,10 @@ namespace CSChatBot
                 Loader.Commands.Where(x => x.Key.DevOnly != true && x.Key.BotAdminOnly != true && x.Key.GroupAdminOnly != true & !x.Key.HideFromInline & !x.Key.DontSearchInline &&
                 x.Key.Triggers.Any(t => t.ToLower().Contains(com[0].ToLower())) & !x.Key.DontSearchInline).ToList();
             choices.AddRange(Loader.Commands.Where(x => x.Key.DontSearchInline && x.Key.Triggers.Any(t => String.Equals(t, com[0], StringComparison.InvariantCultureIgnoreCase))));
-            choices.AddRange(Loader.Commands.Where(x => x.Key.DevOnly && x.Key.AllowInlineAdmin));
+            if (Program.LoadedSetting.TelegramDefaultAdminUserId == user.UserId)
+                choices.AddRange(Loader.Commands.Where(x => (x.Key.DevOnly || x.Key.BotAdminOnly) && x.Key.AllowInlineAdmin));
+            if (user.IsBotAdmin)
+                choices.AddRange(Loader.Commands.Where(x => x.Key.BotAdminOnly && x.Key.AllowInlineAdmin));
 
             var results = new List<InlineQueryResultBase>();
             foreach (var c in choices)
