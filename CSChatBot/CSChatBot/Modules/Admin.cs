@@ -12,6 +12,7 @@ using Telegram.Bot;
 using Microsoft.CSharp;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
+using Telegram.Bot.Types.Enums;
 
 namespace CSChatBot.Modules
 {
@@ -106,10 +107,10 @@ namespace CSChatBot.Modules
             return new CommandResponse(null);
         }
 
-        [ChatCommand(Triggers = new[] { "cs"}, DevOnly = true)]
+        [ChatCommand(Triggers = new[] { "cs"}, DevOnly = true, AllowInlineAdmin = true)]
         public static CommandResponse RunCsCode(CommandEventArgs args)
         {
-            return new CommandResponse(CompileCs(
+            return new CommandResponse($"``` {args.Parameters} ```\n" + CompileCs(
                 @"using System.Linq;
                 using System;
                 using System.Collections.Generic;
@@ -121,41 +122,48 @@ namespace CSChatBot.Modules
                     public static void Main(string[] args) {
                         " + args.Parameters + @"
                     }
-                }").Result);
+                }").Result, parseMode: ParseMode.Markdown);
         }
 
         private static async Task<string> CompileCs(string code)
         {
-            var csc = new CSharpCodeProvider(new Dictionary<string, string>() { { "CompilerVersion", "v3.5" } });
-            var parameters = new CompilerParameters(new[] { "mscorlib.dll", "System.Core.dll", "System.dll", "System.Data.dll" }, "foo.exe", true);
-            parameters.GenerateExecutable = true;
-            CompilerResults results = csc.CompileAssemblyFromSource(parameters, code);
-            var result = new StringBuilder();
-            if (results.Errors.HasErrors)
+            try
             {
-                results.Errors.Cast<CompilerError>().ToList().ForEach(error => result.AppendLine(error.ErrorText));
+                var csc = new CSharpCodeProvider(new Dictionary<string, string>() { { "CompilerVersion", "v3.5" } });
+                var parameters = new CompilerParameters(new[] { "mscorlib.dll", "System.Core.dll", "System.dll", "System.Data.dll" }, "foo.exe", true);
+                parameters.GenerateExecutable = true;
+                CompilerResults results = csc.CompileAssemblyFromSource(parameters, code);
+                var result = new StringBuilder();
+                if (results.Errors.HasErrors)
+                {
+                    results.Errors.Cast<CompilerError>().ToList().ForEach(error => result.AppendLine(error.ErrorText));
+                    return result.ToString();
+                }
+                //no errors, run it.
+                var proc = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "foo.exe",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        CreateNoWindow = true
+                    }
+                };
+
+                proc.Start();
+
+                while (!proc.StandardOutput.EndOfStream)
+                {
+                    result.AppendLine(proc.StandardOutput.ReadLine());
+                    await Task.Delay(500);
+                }
                 return result.ToString();
             }
-            //no errors, run it.
-            var proc = new Process
+            catch(Exception e)
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "foo.exe",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                }
-            };
-            
-            proc.Start();
-
-            while (!proc.StandardOutput.EndOfStream)
-            {
-                result.AppendLine(proc.StandardOutput.ReadLine());
-                await Task.Delay(500);
+                return $"{e.Message}\n{e.StackTrace}";
             }
-            return result.ToString();
         }
         #endregion
     }
