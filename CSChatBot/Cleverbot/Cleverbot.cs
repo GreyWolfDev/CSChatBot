@@ -159,7 +159,7 @@ namespace Cleverbot
                                 var filename = args.Update.Message.MessageId + ".jpg";
                                 new WebClient().DownloadFile(img, filename);
                                 //create the file to send
-                                var f2S = new FileToSend(filename, new FileStream(filename, FileMode.Open, FileAccess.Read));
+                                var f2S = new Telegram.Bot.Types.InputFiles.InputOnlineFile(new FileStream(filename, FileMode.Open, FileAccess.Read), filename);
                                 Console.WriteLine(match);
                                 bot.SendPhotoAsync(args.Update.Message.Chat.Id, f2S, match);
                                 //bot.SendTextMessageAsync(args.Update.Message.Chat.Id, match);

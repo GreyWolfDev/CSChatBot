@@ -40,6 +40,10 @@ namespace ModuleFramework
         /// </summary>
         public bool DevOnly { get; set; } = false;
         /// <summary>
+        /// Allows the command to show inline for admins
+        /// </summary>
+        public bool AllowInlineAdmin { get; set; } = false;
+        /// <summary>
         /// Command can only be used in group
         /// </summary>
         public bool InGroupOnly { get; set; } = false;

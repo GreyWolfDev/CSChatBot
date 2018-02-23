@@ -62,8 +62,8 @@ Content-Disposition: form-data; name="MAX_FILE_SIZE"
                 //get our image bytes
                 var s = new MemoryStream();
                 var big = p.OrderByDescending(x => x.Height).First();
-                var file = bot.GetFileAsync(big.FileId, s).Result;
-                var fileName = big.FilePath.Replace("photos/", "");
+                var file = bot.GetFileAsync(big.FileId).Result;
+                var fileName = file.FilePath.Replace("photos/", "");
                 using (var client = new HttpClient())
                 {
                     using (var content =

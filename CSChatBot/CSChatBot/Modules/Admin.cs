@@ -12,6 +12,9 @@ using Telegram.Bot;
 using Microsoft.CSharp;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
+using Telegram.Bot.Types.Enums;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace CSChatBot.Modules
 {
@@ -23,7 +26,7 @@ namespace CSChatBot.Modules
 
         }
 
-        [ChatCommand(Triggers = new[] {"ground", "finishhim!", "kthxbai"}, BotAdminOnly = true, HelpText = "Stops a user from using the bot")]
+        [ChatCommand(Triggers = new[] { "ground", "finishhim!", "kthxbai" }, BotAdminOnly = true, HelpText = "Stops a user from using the bot")]
         public static CommandResponse GroundUser(CommandEventArgs args)
         {
             var target = args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
@@ -41,7 +44,7 @@ namespace CSChatBot.Modules
             return new CommandResponse($"{target.Name} is grounded!");
         }
 
-        [ChatCommand(Triggers = new[] { "unground", "izoknaow" }, BotAdminOnly = true, HelpText = "Allows user to use the bot again", Parameters = new[]{"<userid>", "<@username>", "as a reply"})]
+        [ChatCommand(Triggers = new[] { "unground", "izoknaow" }, BotAdminOnly = true, HelpText = "Allows user to use the bot again", Parameters = new[] { "<userid>", "<@username>", "as a reply" })]
         public static CommandResponse UngroundUser(CommandEventArgs args)
         {
             var target = args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
@@ -59,13 +62,13 @@ namespace CSChatBot.Modules
             return new CommandResponse($"{target.Name} is ungrounded!");
         }
 
-        [ChatCommand(Triggers = new[] {"sql"}, DevOnly = true, Parameters = new[] { "<sql command>"})]
+        [ChatCommand(Triggers = new[] { "sql" }, DevOnly = true, Parameters = new[] { "<sql command>" })]
         public static CommandResponse RunSql(CommandEventArgs args)
         {
             return new CommandResponse($"{args.DatabaseInstance.ExecuteNonQuery(args.Parameters)} records changed");
         }
 
-        [ChatCommand(Triggers = new[] { "query" }, DevOnly = true, Parameters = new[] {"<select statement>" })]
+        [ChatCommand(Triggers = new[] { "query" }, DevOnly = true, Parameters = new[] { "<select statement>" })]
         public static CommandResponse RunQuery(CommandEventArgs args)
         {
             return new CommandResponse(args.DatabaseInstance.ExecuteQuery(args.Parameters));
@@ -93,7 +96,7 @@ namespace CSChatBot.Modules
             }
             return new CommandResponse(null);
         }
-        
+
         [ChatCommand(Triggers = new[] { "rembotadmin", "remadmin" }, DevOnly = true, Parameters = new[] { "<userid>", "<@username>", "as a reply" })]
         public static CommandResponse RemoveBotAdmin(CommandEventArgs args)
         {
@@ -106,10 +109,10 @@ namespace CSChatBot.Modules
             return new CommandResponse(null);
         }
 
-        [ChatCommand(Triggers = new[] { "cs"}, DevOnly = true)]
+        [ChatCommand(Triggers = new[] { "cs" }, DevOnly = true, AllowInlineAdmin = true)]
         public static CommandResponse RunCsCode(CommandEventArgs args)
         {
-            return new CommandResponse(CompileCs(
+            return new CommandResponse($"``` {args.Parameters} ```\n" + CompileCs(
                 @"using System.Linq;
                 using System;
                 using System.Collections.Generic;
@@ -117,45 +120,85 @@ namespace CSChatBot.Modules
                 using System.IO;
                 using System.Net;
                 using System.Threading;
+                using Telegram.Bot.Types.Enums;
+                using Telegram.Bot.Types;
+                using Telegram.Bot;
                 class Program {
                     public static void Main(string[] args) {
                         " + args.Parameters + @"
                     }
-                }").Result);
+                }").Result, parseMode: ParseMode.Markdown);
+        }
+
+        [ChatCommand(Triggers = new[] { "tg" }, DevOnly = true, AllowInlineAdmin = true)]
+        public static CommandResponse EmulateTG(CommandEventArgs args)
+        {
+            var code = args.Parameters;
+            var rgx = new Regex("(bot.).*(Async).*(\\))(?=;)");
+            var add = "var r = $&.Result";
+            code = rgx.Replace(code, add);
+            return new CommandResponse($"``` {code} ```\n" + CompileCs(
+                @"using System.Linq;
+                using System;
+                using System.Collections.Generic;
+                using System.Diagnostics;
+                using System.IO;
+                using System.Net;
+                using System.Threading;
+                using Telegram.Bot.Types.Enums;
+                using Telegram.Bot.Types;
+                using Telegram.Bot;
+                class Program {
+                    public static void Main(string[] args) {
+                        var bot = new TelegramBotClient(""" + Program.LoadedSetting.TelegramBotAPIKey + @""");
+                        try{" + code + @"}
+                        catch(AggregateException e){
+                        Console.WriteLine(e.InnerExceptions[0].Message);
+                        }
+                    }
+                }").Result, parseMode: ParseMode.Markdown);
         }
 
         private static async Task<string> CompileCs(string code)
         {
-            var csc = new CSharpCodeProvider(new Dictionary<string, string>() { { "CompilerVersion", "v3.5" } });
-            var parameters = new CompilerParameters(new[] { "mscorlib.dll", "System.Core.dll", "System.dll", "System.Data.dll" }, "foo.exe", true);
-            parameters.GenerateExecutable = true;
-            CompilerResults results = csc.CompileAssemblyFromSource(parameters, code);
-            var result = new StringBuilder();
-            if (results.Errors.HasErrors)
+            try
             {
-                results.Errors.Cast<CompilerError>().ToList().ForEach(error => result.AppendLine(error.ErrorText));
+                var csc = new CSharpCodeProvider(new Dictionary<string, string>() { { "CompilerVersion", "v4.0" } });
+                var parameters = new CompilerParameters(new[] { "mscorlib.dll", "System.Core.dll", "System.dll", "System.Data.dll", "Telegram.Bot.dll", "Newtonsoft.Json.dll", "System.Net.Http.dll" }, Path.Combine(Program.RootDirectory, "foo.exe"), true);
+                parameters.GenerateExecutable = true;
+                CompilerResults results = csc.CompileAssemblyFromSource(parameters, code);
+                var result = new StringBuilder();
+                if (results.Errors.HasErrors)
+                {
+                    results.Errors.Cast<CompilerError>().ToList().ForEach(error => result.AppendLine(error.ErrorText));
+                    return result.ToString();
+                }
+                //no errors, run it.
+                var proc = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = Path.Combine(Program.RootDirectory, "foo.exe"),
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        CreateNoWindow = true,
+                        WorkingDirectory = Program.RootDirectory
+                    }
+                };
+
+                proc.Start();
+
+                while (!proc.StandardOutput.EndOfStream)
+                {
+                    result.AppendLine(proc.StandardOutput.ReadLine());
+                    await Task.Delay(500);
+                }
                 return result.ToString();
             }
-            //no errors, run it.
-            var proc = new Process
+            catch (Exception e)
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "foo.exe",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                }
-            };
-            
-            proc.Start();
-
-            while (!proc.StandardOutput.EndOfStream)
-            {
-                result.AppendLine(proc.StandardOutput.ReadLine());
-                await Task.Delay(500);
+                return $"{e.Message}\n{e.StackTrace}";
             }
-            return result.ToString();
         }
         #endregion
     }
