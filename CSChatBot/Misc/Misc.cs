@@ -55,7 +55,7 @@ namespace Misc
             {
                 try
                 {
-                    if (args.Update?.Message?.Type == MessageType.PhotoMessage)
+                    if (args.Update?.Message?.Type == MessageType.Photo)
                     {
                         if (args.Update.Message.Chat.Type != ChatType.Private)
                         {
