@@ -50,6 +50,7 @@ namespace CSChatBot
             Bot.OnUpdate += BotOnUpdateReceived;
             Bot.OnInlineQuery += BotOnOnInlineQuery;
             Bot.OnCallbackQuery += BotOnOnCallbackQuery;
+            
             Bot.StartReceiving();
 
             Log.WriteLine("Connected to Telegram and listening: " + Me.Username);
@@ -59,7 +60,7 @@ namespace CSChatBot
         private static void BotOnOnCallbackQuery(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
         {
             var query = callbackQueryEventArgs.CallbackQuery;
-            
+
             //extract the trigger
             var trigger = query.Data.Split('|')[0];
             var args = query.Data.Replace(trigger + "|", "");
@@ -119,16 +120,9 @@ namespace CSChatBot
             {
                 Bot.AnswerInlineQueryAsync(query.Id, new InlineQueryResultBase[]
                 {
-                    new InlineQueryResultArticle()
+                    new InlineQueryResultArticle("0", "Nope!", new InputTextMessageContent("I did bad things, and now I'm grounded from the bot."))
                     {
                         Description = "You are grounded...",
-                        Id = "0",
-                        Title = "Nope!",
-                        InputMessageContent = new InputTextMessageContent
-                        {
-                            DisableWebPagePreview = true,
-                            MessageText = "I did bad things, and now I'm grounded from the bot."
-                        }
                     }
                 }, 0, true);
                 return;
@@ -169,20 +163,19 @@ namespace CSChatBot
                     description = response.ImageDescription ?? description;
                     title = response.ImageTitle ?? title;
                 }
-                results.Add(new InlineQueryResultArticle()
+
+
+                results.Add(new InlineQueryResultArticle(Loader.Commands.ToList().IndexOf(c).ToString(), title, new InputTextMessageContent(response.Text)
+                {
+                    DisableWebPagePreview = false,
+                    ParseMode = response.ParseMode
+                })
                 {
                     Description = description,
-                    Id = Loader.Commands.ToList().IndexOf(c).ToString(),
                     Title = title,
                     ThumbUrl = response.ImageUrl,
                     Url = response.ImageUrl,
-                    HideUrl = true,
-                    InputMessageContent = new InputTextMessageContent
-                    {
-                        DisableWebPagePreview = false,
-                        MessageText = response.Text,
-                        ParseMode = response.ParseMode
-                    }
+                    HideUrl = true
                 });
 
             }

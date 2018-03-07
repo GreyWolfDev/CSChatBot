@@ -1,0 +1,15 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+<div id="widget">
+
+</div>
+@section scripts{
+<script type="text/javascript">
+    $.get("/Home/Widget", function (d) {
+        $('#widget').html(d);
+        TWidgetLogin.init('widget_login', 324283739, { "request_access": "write" }, false);
+    });
+
+</script>
+    }
