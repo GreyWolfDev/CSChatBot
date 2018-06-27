@@ -390,12 +390,19 @@ namespace CSChatBot
                 }
                 long targetId = 0;
                 if (long.TryParse(args.Target, out targetId))
-                    Bot.SendTextMessageAsync(targetId, text, replyMarkup: CreateMarkupFromMenu(args.Response.Menu), parseMode: args.Response.ParseMode);
+                {
+                    var r = Bot.SendTextMessageAsync(targetId, text, replyMarkup: CreateMarkupFromMenu(args.Response.Menu), parseMode: args.Response.ParseMode).Result;
+                }
                 //Bot.SendTextMessage(update.Message.Chat.Id, text);
                 return;
             }
+            catch (AggregateException e)
+            {
+                Console.WriteLine(e.InnerExceptions[0].Message);
+            }
             catch (Exception e)
             {
+
                 //Logging.Write("Server error! restarting..");
                 //Process.Start("csircbot.exe");
                 //Environment.Exit(7);
