@@ -9,13 +9,16 @@ using DB.Models;
 using ModuleFramework;
 using Newtonsoft.Json;
 using Telegram.Bot;
-
+#pragma warning disable IDE0044 // Add readonly modifier
+// ReSharper disable InconsistentNaming
+#pragma warning disable IDE1006 // Naming Styles
 namespace XKCD
 {
     /// <summary>
     /// A sample module for CSChatBot
     /// </summary>
     [ModuleFramework.Module(Author = "parabola949", Name = "XKCD", Version = "1.0")]
+    
     public class XKCD
     {
         internal static Random R = new Random();
@@ -45,8 +48,7 @@ namespace XKCD
             }
             else
             {
-                var num = 0;
-                if (int.TryParse(args.Parameters, out num))
+                if (int.TryParse(args.Parameters, out var num))
                 {
                     chosen =
                         JsonConvert.DeserializeObject<XkcdPost>(

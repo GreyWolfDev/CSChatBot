@@ -69,7 +69,7 @@ namespace ClashOfClans
                     var json = wc.GetStringAsync(url).Result;
                     war = JsonConvert.DeserializeObject<WarResponse>(json);
                 }
-                catch (Exception e)
+                catch
                 {
                     return new CommandResponse($"Unable to find war information");
                 }
@@ -157,7 +157,7 @@ namespace ClashOfClans
                     var json = wc.GetStringAsync(url).Result;
                     clan = JsonConvert.DeserializeObject<ClanResponse>(json);
                 }
-                catch (Exception e)
+                catch
                 {
                     return new CommandResponse($"Unable to find clan '{input}'");
                 }

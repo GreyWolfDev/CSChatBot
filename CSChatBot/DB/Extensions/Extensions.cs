@@ -135,7 +135,7 @@ namespace DB.Extensions
 
                 return true;
             }
-            catch (Exception e)
+            catch
             {
                 return false;
             }
@@ -261,7 +261,7 @@ namespace DB.Extensions
 
                 return true;
             }
-            catch (Exception e)
+            catch
             {
                 return false;
             }

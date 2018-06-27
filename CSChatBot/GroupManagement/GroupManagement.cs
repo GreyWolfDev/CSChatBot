@@ -11,7 +11,7 @@ using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
-
+#pragma warning disable 4014
 
 namespace GroupManagement
 {
@@ -51,6 +51,7 @@ namespace GroupManagement
                                 db.Log.WriteLine($"Kicking {m.From.FirstName} from {m.Chat.Title} for image");
                                 bot.DeleteMessageAsync(m.Chat.Id, m.MessageId);
                                 KickUser(m.Chat.Id, m.From.Id, bot);
+
                             }
                         }
                     }
