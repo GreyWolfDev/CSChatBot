@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2020
+VisualStudioVersion = 15.0.27004.2008
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSChatBot", "CSChatBot\CSChatBot.csproj", "{5C0AE7A1-BE52-4EAF-B658-053A4648C39C}"
 EndProject
@@ -28,6 +28,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClashOfClans", "ClashOfClans\ClashOfClans.csproj", "{0768731D-96D3-486F-9F6C-908745FD9B4C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GroupManagement", "GroupManagement\GroupManagement.csproj", "{1DC83EE4-7778-4B00-8A86-236E78C04715}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Seras Webpage", "Seras Webpage\Seras Webpage.csproj", "{9F8AB388-C0B3-4788-8870-65A06E51FB9F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -87,6 +89,10 @@ Global
 		{1DC83EE4-7778-4B00-8A86-236E78C04715}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1DC83EE4-7778-4B00-8A86-236E78C04715}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1DC83EE4-7778-4B00-8A86-236E78C04715}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F8AB388-C0B3-4788-8870-65A06E51FB9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F8AB388-C0B3-4788-8870-65A06E51FB9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F8AB388-C0B3-4788-8870-65A06E51FB9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F8AB388-C0B3-4788-8870-65A06E51FB9F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
