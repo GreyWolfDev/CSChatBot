@@ -39,7 +39,7 @@ namespace CSChatBot
 
                 Me = Bot.GetMeAsync().Result;
             }
-            catch (Exception e)
+            catch
             {
                 Log.WriteLine("502 bad gateway, restarting in 2 seconds", LogLevel.Error, fileName: "telegram.log");
                 Thread.Sleep(TimeSpan.FromSeconds(2));
@@ -359,7 +359,7 @@ namespace CSChatBot
                 //Bot.SendTextMessage(update.Message.Chat.Id, text);
                 return;
             }
-            catch (Exception e)
+            catch
             {
 
             }
@@ -381,14 +381,21 @@ namespace CSChatBot
                     text = text.Substring(1);
 
                 }
-                long targetId = 0;
-                if (long.TryParse(args.Target, out targetId))
-                    Bot.SendTextMessageAsync(targetId, text, replyMarkup: CreateMarkupFromMenu(args.Response.Menu), parseMode: args.Response.ParseMode);
+
+                if (long.TryParse(args.Target, out var targetId))
+                {
+                    var r = Bot.SendTextMessageAsync(targetId, text, replyMarkup: CreateMarkupFromMenu(args.Response.Menu), parseMode: args.Response.ParseMode).Result;
+                }
                 //Bot.SendTextMessage(update.Message.Chat.Id, text);
                 return;
             }
-            catch (Exception e)
+            catch (AggregateException e)
             {
+                Console.WriteLine(e.InnerExceptions[0].Message);
+            }
+            catch
+            {
+
                 //Logging.Write("Server error! restarting..");
                 //Process.Start("csircbot.exe");
                 //Environment.Exit(7);

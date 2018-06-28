@@ -167,8 +167,12 @@ namespace CSChatBot.Modules
             try
             {
                 var csc = new CSharpCodeProvider(new Dictionary<string, string>() { { "CompilerVersion", "v4.0" } });
-                var parameters = new CompilerParameters(new[] { "mscorlib.dll", "System.Core.dll", "System.dll", "System.Data.dll", "Telegram.Bot.dll", "Newtonsoft.Json.dll", "System.Net.Http.dll" }, Path.Combine(Program.RootDirectory, "foo.exe"), true);
-                parameters.GenerateExecutable = true;
+                var parameters = new CompilerParameters(
+                    new[]
+                    {
+                        "mscorlib.dll", "System.Core.dll", "System.dll", "System.Data.dll", "Telegram.Bot.dll",
+                        "Newtonsoft.Json.dll", "System.Net.Http.dll"
+                    }, Path.Combine(Program.RootDirectory, "foo.exe"), true) {GenerateExecutable = true};
                 CompilerResults results = csc.CompileAssemblyFromSource(parameters, code);
                 var result = new StringBuilder();
                 if (results.Errors.HasErrors)

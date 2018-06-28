@@ -14,7 +14,8 @@ using Telegram.Bot.Types.Enums;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
-
+// ReSharper disable InconsistentNaming
+#pragma warning disable IDE1006 // Naming Styles
 namespace Misc
 {
     /// <summary>
@@ -146,7 +147,7 @@ namespace Misc
                     return (int)(result.outputs[0].data.concepts.First(x => x.name == "nsfw").value * 100);
                 }
             }
-            catch (Exception e)
+            catch
             {
                 // ignored
                 return 0;

@@ -73,7 +73,7 @@ namespace CSChatBot
                         idx++;
                     }
                 }
-                catch (Exception e)
+                catch
                 {
                     PrintHelp();
                 }
@@ -177,7 +177,7 @@ namespace CSChatBot
         private static void RunConfiguration(string alias)
         {
             LoadedSetting = DB.Settings.FirstOrDefault(x => x.Alias == alias) ?? new Setting { Alias = alias };
-            ConsoleKey key;
+            
             string line;
             Log.WriteLine($"\nBeginning set up for configuration {LoadedSetting.Alias}");
 

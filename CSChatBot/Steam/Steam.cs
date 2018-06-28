@@ -53,8 +53,8 @@ namespace Steam
                 input = input.Substring(input.IndexOf("/id/") + 4);
                 input = input.Replace("/", "");
             }
-            long id = 0;
-            if (long.TryParse(input, out id))
+
+            if (long.TryParse(input, out var id))
             {
                 u.SetSetting<string>("SteamId", args.DatabaseInstance, "", id.ToString());
                 return new CommandResponse($"User id set to {id}");
@@ -153,10 +153,9 @@ namespace Steam
                                 }
                             }
                         }
-                        catch (Exception e)
+                        catch
                         {
                             // ignored
-                            e = e;
                         }
                     }
 
@@ -227,7 +226,7 @@ namespace Steam
             hours = hours.Substring(3);
             hours = hours.Substring(0, hours.IndexOf("</b>"));
 
-            return new { total = total, hours = hours };
+            return new { total, hours };
 
 
         }
