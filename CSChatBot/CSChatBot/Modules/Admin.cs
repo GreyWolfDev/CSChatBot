@@ -123,6 +123,7 @@ namespace CSChatBot.Modules
                 using Telegram.Bot.Types.Enums;
                 using Telegram.Bot.Types;
                 using Telegram.Bot;
+                using System.Threading.Tasks;
                 class Program {
                     public static void Main(string[] args) {
                         " + args.Parameters + @"
@@ -148,6 +149,8 @@ namespace CSChatBot.Modules
                 using Telegram.Bot.Types.Enums;
                 using Telegram.Bot.Types;
                 using Telegram.Bot;
+                using System.Threading.Tasks;
+                using Newtonsoft.Json;
                 class Program {
                     public static void Main(string[] args) {
                         var bot = new TelegramBotClient(""" + Program.LoadedSetting.TelegramBotAPIKey + @""");
