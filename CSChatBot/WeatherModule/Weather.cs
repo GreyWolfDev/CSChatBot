@@ -14,6 +14,7 @@ using ModuleFramework;
 using Newtonsoft.Json;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
+using OpenWeatherMap;
 
 // ReSharper disable InconsistentNaming
 
@@ -38,7 +39,7 @@ namespace WeatherModule
             {
                 //now ask for the API Key
                 Console.Clear();
-                Console.Write("What is your weather underground API key? : ");
+                Console.Write("What is your OpenWeatherMap API key? : ");
                 ApiKey = Console.ReadLine();
                 settings.SetString(db, "WeatherAPIKey", ApiKey);
             }
@@ -74,15 +75,27 @@ namespace WeatherModule
 
         public static CommandResponse GetWeather(string location)
         {
-            var c = Parse($"http://api.wunderground.com/api/{ApiKey}/conditions/pws:1/q/{location}.xml");
-            if (!String.IsNullOrEmpty(c.place))
+            var baseUrl = "https://api.openweathermap.org/data/2.5/";
+            var url = baseUrl + $"weather?appid={ApiKey}&";
+            var param = "";
+            //check if location is coords
+            if (float.TryParse(location.Split(',')[0], out float lat))
             {
-
-                return new CommandResponse($" Conditions for {c.place}:\n{c.weather1} {c.temperature_string}\nForecast:\n{ParseForecast($"http://api.wunderground.com/api/{ApiKey}/forecast/pws:1/q/{location}.xml")}", parseMode: ParseMode.Markdown)
+                param = $"lat={location.Split(',')[0]}&lon={location.Split(',')[1]}";
+            }
+            else
+                param = $"zip={location},us";
+            var c = Parse(url + param);
+            //var client = new OpenWeatherMapClient(ApiKey);
+            //var c = client.CurrentWeather.GetByZipCode(location).Result;
+            if (!String.IsNullOrEmpty(c.name))
+            {
+                //Forecast:\n{ParseForecast($"{baseUrl}forecast?appid={ApiKey}&{param}")}
+                return new CommandResponse($" Conditions for *{c.name}*:\n{c.weather[0].description} {(int)c.main.temp}°F\n", parseMode: ParseMode.Markdown)
                 {
-                    ImageUrl = c.icon_url,
-                    ImageDescription = $"{c.weather1} {c.temperature_string}",
-                    ImageTitle = c.place
+                    //ImageUrl = c.Weather.Icon,
+                    //ImageDescription = $"{c.weather1} {c.temperature_string}",
+                    //ImageTitle = c.place
                 };
             }
             return null;
@@ -92,19 +105,32 @@ namespace WeatherModule
         {
 
             dynamic phrases = JsonConvert.DeserializeObject(new StreamReader(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Resources\\fw.json").ReadToEnd());
-            var c = Parse($"http://api.wunderground.com/api/{ApiKey}/conditions/pws:1/q/{location}.xml");
-            if (!String.IsNullOrEmpty(c.place))
+            var url = $"https://api.openweathermap.org/data/2.5/weather?appid={ApiKey}&";
+            //check if location is coords
+            if (location.Contains(","))
+            {
+                if (location.Split(',')[1].Contains("."))
+                {
+                    url += $"lat={location.Split(',')[0]}&lon={location.Split(',')[1]}";
+                }
+                else
+                    url += $"zip={location},us";
+            }
+            else
+                url += $"zip={location},us";
+            var c = Parse(url);
+            if (!String.IsNullOrEmpty(c.name))
             {
 
-                var result = $"Conditions for {c.place}:\n{c.weather1} {c.temperature_string}\n";
+                var result = $"Conditions for *{c.name}*:\n{c.weather[0].description} {(int)c.main.temp}°F\n";
                 //now the tricky bits.
-                var tempF = float.Parse(c.temperature_string.Substring(0, c.temperature_string.IndexOf("F", StringComparison.Ordinal)).Trim());
+                var tempF = c.main.temp;
                 var tempC = 5.0 / 9.0 * (tempF - 32);
                 var choices = new List<dynamic>();
                 foreach (var phrase in phrases.phrases)
                 {
                     //first match on conditions...
-                    if (phrase.condition != null && c.weather1.ToLower().Contains(phrase.condition.ToString()))
+                    if (phrase.condition != null && c.weather[0].description.ToLower().Contains(phrase.condition.ToString()))
                     {
                         if (phrase.min != null)
                         {
@@ -173,9 +199,9 @@ namespace WeatherModule
                 result += choice.title.ToString().Replace("|", " ") + "\n" + choice.subline.ToString();
                 return new CommandResponse(result, parseMode: ParseMode.Markdown)
                 {
-                    ImageUrl = c.icon_url,
-                    ImageDescription = choice.title.ToString().Replace("|", " ") + "\n" + choice.subline.ToString(),
-                    ImageTitle = c.place
+                    //ImageUrl = c.icon_url,
+                    //ImageDescription = choice.title.ToString().Replace("|", " ") + "\n" + choice.subline.ToString(),
+                    //ImageTitle = c.place
                 };
             }
             return null;
@@ -221,107 +247,96 @@ namespace WeatherModule
             }
         }
 
-        public static Conditions Parse(string inputXml)
+        public static Condition Parse(string inputXml)
         {
             //Variables
-            var c = new Conditions();
+            var c = new Condition();
 
             var cli = new WebClient { Encoding = Encoding.UTF8 };
             byte[] data = Encoding.Default.GetBytes(cli.DownloadString(inputXml));
             string weather = Encoding.UTF8.GetString(data);
-
-            using (XmlReader reader = XmlReader.Create(new StringReader(weather)))
-            {
-                // Parse the file and display each of the nodes.
-                while (reader.Read())
-                {
-                    switch (reader.NodeType)
-                    {
-                        case XmlNodeType.Element:
-                            if (reader.Name.Equals("full"))
-                            {
-                                reader.Read();
-                                c.place = (reader.Value);
-                            }
-                            else if (reader.Name.Equals("icon_url"))
-                            {
-                                reader.Read();
-                                c.icon_url = reader.Value;
-                            }
-                            else if (reader.Name.Equals("observation_time"))
-                            {
-                                reader.Read();
-                                c.obs_time = reader.Value;
-                            }
-                            else if (reader.Name.Equals("weather"))
-                            {
-                                reader.Read();
-                                c.weather1 = reader.Value;
-                            }
-                            else if (reader.Name.Equals("temperature_string"))
-                            {
-                                reader.Read();
-                                c.temperature_string = reader.Value;
-                            }
-                            else if (reader.Name.Equals("relative_humidity"))
-                            {
-                                reader.Read();
-                                c.relative_humidity = reader.Value;
-                            }
-                            else if (reader.Name.Equals("wind_string"))
-                            {
-                                reader.Read();
-                                c.wind_string = reader.Value;
-                            }
-                            else if (reader.Name.Equals("pressure_mb"))
-                            {
-                                reader.Read();
-                                c.pressure_mb = reader.Value;
-                            }
-                            else if (reader.Name.Equals("dewpoint_string"))
-                            {
-                                reader.Read();
-                                c.dewpoint_string = reader.Value;
-                            }
-                            else if (reader.Name.Equals("visibility_km"))
-                            {
-                                reader.Read();
-                                c.visibility_km = reader.Value;
-                            }
-                            else if (reader.Name.Equals("latitude"))
-                            {
-                                reader.Read();
-                                c.latitude = reader.Value;
-                            }
-                            else if (reader.Name.Equals("longitude"))
-                            {
-                                reader.Read();
-                                c.longitude = reader.Value;
-                            }
-
-                            break;
-                    }
-                }
-            }
+            c = JsonConvert.DeserializeObject<Condition>(weather);
+            c.main.temp = (float)(c.main.temp - 273.15) * 9 / 5 + 32;
             return c;
         }
 
     }
 
-    public class Conditions
+    public class Condition
     {
-        public string place = "";
-        public string obs_time = "";
-        public string weather1 = "";
-        public string temperature_string = "";
-        public string relative_humidity = "";
-        public string wind_string = "";
-        public string pressure_mb = "";
-        public string dewpoint_string = "";
-        public string visibility_km = "";
-        public string latitude = "";
-        public string longitude = "";
-        public string icon_url;
+        public Coord coord { get; set; }
+        public RWeather[] weather { get; set; }
+        public string _base { get; set; }
+        public Main main { get; set; }
+        public int visibility { get; set; }
+        public Wind wind { get; set; }
+        public Clouds clouds { get; set; }
+        public int dt { get; set; }
+        public Sys sys { get; set; }
+        public int id { get; set; }
+        public string name { get; set; }
+        public int cod { get; set; }
+    }
+
+    public class Coord
+    {
+        public float lon { get; set; }
+        public float lat { get; set; }
+    }
+
+    public class Main
+    {
+        public float temp { get; set; }
+        public int pressure { get; set; }
+        public int humidity { get; set; }
+        public float temp_min { get; set; }
+        public float temp_max { get; set; }
+    }
+
+    public class Wind
+    {
+        public float speed { get; set; }
+        public int deg { get; set; }
+        public float gust { get; set; }
+    }
+
+    public class Clouds
+    {
+        public int all { get; set; }
+    }
+
+    public class Sys
+    {
+        public int type { get; set; }
+        public int id { get; set; }
+        public float message { get; set; }
+        public string country { get; set; }
+        public int sunrise { get; set; }
+        public int sunset { get; set; }
+    }
+
+    public class RWeather
+    {
+        public int id { get; set; }
+        public string main { get; set; }
+        public string description { get; set; }
+        public string icon { get; set; }
+    }
+
+    //public class Conditions
+    //{
+    //    public string place = "";
+    //    public string obs_time = "";
+    //    public string weather1 = "";
+    //    public string temperature_string = "";
+    //    public string relative_humidity = "";
+    //    public string wind_string = "";
+    //    public string pressure_mb = "";
+    //    public string dewpoint_string = "";
+    //    public string visibility_km = "";
+    //    public string latitude = "";
+    //    public string longitude = "";
+    //    public string icon_url;
     }
 
     [Serializable]
@@ -409,4 +424,5 @@ namespace WeatherModule
 
         }
     }
-}
+
+

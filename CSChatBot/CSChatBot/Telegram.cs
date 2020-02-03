@@ -39,8 +39,9 @@ namespace CSChatBot
 
                 Me = Bot.GetMeAsync().Result;
             }
-            catch
+            catch(Exception e)
             {
+                Console.WriteLine(e.Message);
                 Log.WriteLine("502 bad gateway, restarting in 2 seconds", LogLevel.Error, fileName: "telegram.log");
                 Thread.Sleep(TimeSpan.FromSeconds(2));
                 //API is down... 
@@ -77,15 +78,19 @@ namespace CSChatBot
                         SourceUser = user,
                         DatabaseInstance = Program.DB,
                         Parameters = args,
-                        Target = query.Message.Chat.Id.ToString(),
+                        Target = query?.Message?.Chat?.Id.ToString() ?? query.InlineMessageId,
                         Messenger = Program.Messenger,
                         Bot = Bot,
                         Query = query
                     };
                     var response = callback.Value.Invoke(eArgs);
-                    if (!String.IsNullOrWhiteSpace(response?.Text))
+                    if (!String.IsNullOrWhiteSpace(response?.CallbackCaption))
                     {
-                        Send(response, query.Message, true);
+                        Reply(response, query);
+                    }
+                    else if (!String.IsNullOrWhiteSpace(response?.Text))
+                    {
+                        Send(response, query.Message, response.Edit);
                     }
                 }
             }
@@ -142,41 +147,63 @@ namespace CSChatBot
             var results = new List<InlineQueryResultBase>();
             foreach (var c in choices)
             {
-                var response = c.Value.Invoke(new CommandEventArgs
+                try
                 {
-                    SourceUser = user,
-                    DatabaseInstance = Program.DB,
-                    Parameters = com[1],
-                    Target = "",
-                    Messenger = Program.Messenger,
-                    Bot = Bot,
-                    Message = null
-                });
+                    var response = c.Value.Invoke(new CommandEventArgs
+                    {
+                        SourceUser = user,
+                        DatabaseInstance = Program.DB,
+                        Parameters = com[1],
+                        Target = "",
+                        Messenger = Program.Messenger,
+                        Bot = Bot,
+                        Message = null
+                    });
 
 
 
 
-                var title = c.Key.Triggers[0];
-                var description = c.Key.HelpText;
-                if (query.Query.Split(' ').Length > 1 || c.Key.DontSearchInline || c.Key.Triggers.Any(x => String.Equals(x, com[0], StringComparison.InvariantCultureIgnoreCase)))
-                {
-                    description = response.ImageDescription ?? description;
-                    title = response.ImageTitle ?? title;
+                    var title = c.Key.Triggers[0];
+                    var description = c.Key.HelpText;
+                    if (query.Query.Split(' ').Length > 1 || c.Key.DontSearchInline || c.Key.Triggers.Any(x => String.Equals(x, com[0], StringComparison.InvariantCultureIgnoreCase)))
+                    {
+                        description = response.ImageDescription ?? description;
+                        title = response.ImageTitle ?? title;
+                    }
+
+                    if (!String.IsNullOrWhiteSpace(response.ImageFull))
+                    {
+                        results.Add(new InlineQueryResultPhoto(Loader.Commands.ToList().IndexOf(c).ToString(), response.ImageFull, response.ImageUrl)
+                        {
+                            Caption = response.Text,
+                            ParseMode = response.ParseMode,
+                            ReplyMarkup = CreateMarkupFromMenu(response.Menu),
+                            Title = title,
+                            Description = description,
+                            ThumbUrl = response.ImageUrl,
+                        });
+                    }
+                    else
+                    {
+                        results.Add(new InlineQueryResultArticle(Loader.Commands.ToList().IndexOf(c).ToString(), title, new InputTextMessageContent(response.Text)
+                        {
+                            DisableWebPagePreview = false,
+                            ParseMode = response.ParseMode
+                        })
+                        {
+                            Description = description,
+                            Title = title,
+                            ThumbUrl = response.ImageUrl,
+                            Url = response.ImageUrl,
+                            HideUrl = true,
+                            ReplyMarkup = CreateMarkupFromMenu(response.Menu)
+                        });
+                    }
                 }
-
-
-                results.Add(new InlineQueryResultArticle(Loader.Commands.ToList().IndexOf(c).ToString(), title, new InputTextMessageContent(response.Text)
+                catch(Exception e)
                 {
-                    DisableWebPagePreview = false,
-                    ParseMode = response.ParseMode
-                })
-                {
-                    Description = description,
-                    Title = title,
-                    ThumbUrl = response.ImageUrl,
-                    Url = response.ImageUrl,
-                    HideUrl = true
-                });
+                    Log.WriteLine(e.Message, LogLevel.Error);
+                }
 
             }
             var menu = results.ToArray();
@@ -363,6 +390,11 @@ namespace CSChatBot
             {
 
             }
+        }
+
+        public static void Reply(CommandResponse response, CallbackQuery Query)
+        {
+            Bot.AnswerCallbackQueryAsync(Query.Id, response.CallbackCaption);
         }
 
 

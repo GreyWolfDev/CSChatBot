@@ -76,6 +76,7 @@ namespace CSChatBot
                 catch
                 {
                     PrintHelp();
+                    
                 }
             }
 

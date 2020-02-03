@@ -110,8 +110,7 @@ namespace Steam
                 var build = new Builder(_steamKey);
                 var url = build.CreateSummaryUrl(id);
                 var steamuser = JsonConvert.DeserializeObject<PlayerSummaries>(wc.DownloadString(url)).response?.players?.player[0];
-                if (steamuser == null)
-                    return new CommandResponse("Could not load user info");
+
                 //build our response
                 var response = $"{steamuser.personaname}\n";
                 var pub = steamuser.communityvisibilitystate == 3;

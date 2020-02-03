@@ -21,35 +21,41 @@ namespace Logger
 
         public void Write(object msg, LogLevel level = LogLevel.Info, ConsoleColor? overrideColor = null, string fileName = "log.log")
         {
-            var finalMessage = $"{DateTime.Now} ";
-            ConsoleColor color = ConsoleColor.Gray;
-            if (overrideColor != null)
-                color = overrideColor.Value;
-            else
-                switch (level)
-                {
-                    case LogLevel.Info:
-                        color = ConsoleColor.Gray;
-                        finalMessage += "[INFO] - ";
-                        break;
-                    case LogLevel.Warn:
-                        color = ConsoleColor.Yellow;
-                        finalMessage += "[WARN] - ";
-                        break;
-                    case LogLevel.Error:
-                        color = ConsoleColor.Red;
-                        finalMessage += "[ERROR] - ";
-                        break;
-                    case LogLevel.Highlight:
-                        color = ConsoleColor.White;
-                        finalMessage += "[HIGHLIGHT] - ";
-                        break;
-                }
-            finalMessage += msg.ToString();
-            _logQueue.Enqueue(new LogQueueItem(System.IO.Path.Combine(Path, fileName), finalMessage));
+            try
+            {
+                var finalMessage = $"{DateTime.Now} ";
+                ConsoleColor color = ConsoleColor.Gray;
+                if (overrideColor != null)
+                    color = overrideColor.Value;
+                else
+                    switch (level)
+                    {
+                        case LogLevel.Info:
+                            color = ConsoleColor.Gray;
+                            finalMessage += "[INFO] - ";
+                            break;
+                        case LogLevel.Warn:
+                            color = ConsoleColor.Yellow;
+                            finalMessage += "[WARN] - ";
+                            break;
+                        case LogLevel.Error:
+                            color = ConsoleColor.Red;
+                            finalMessage += "[ERROR] - ";
+                            break;
+                        case LogLevel.Highlight:
+                            color = ConsoleColor.White;
+                            finalMessage += "[HIGHLIGHT] - ";
+                            break;
+                    }
+                finalMessage += msg.ToString();
+                _logQueue.Enqueue(new LogQueueItem(System.IO.Path.Combine(Path, fileName), finalMessage));
 
-            Console.ForegroundColor = color;
-            Console.Write(finalMessage);
+                Console.ForegroundColor = color;
+                Console.Write(finalMessage);
+            }catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
 
         public void WriteLine(object msg, LogLevel level = LogLevel.Info, ConsoleColor? overrideColor = null, string fileName = "log.log")

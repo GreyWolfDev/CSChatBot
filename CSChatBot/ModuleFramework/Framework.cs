@@ -92,7 +92,7 @@ namespace ModuleFramework
         /// Sets the help text for this command
         /// </summary>
         public string HelpText { get; set; }
-        
+
     }
 
     public class CommandResponse
@@ -108,9 +108,12 @@ namespace ModuleFramework
         public Menu Menu { get; set; }
         public ParseMode ParseMode { get; set; }
         public string ImageUrl { get; set; }
+        public string ImageFull { get; set; }
         public string ImageTitle { get; set; }
         public string ImageCaption { get; set; }
         public string ImageDescription { get; set; }
+        public string CallbackCaption { get; set; }
+        public bool Edit { get; set; } = true;
         /// <summary>
         /// Sends a response through the bot
         /// </summary>
@@ -119,13 +122,14 @@ namespace ModuleFramework
         /// <param name="replyMarkup">Reply markup.  Optional</param>
         /// <param name="parseMode">How the text should be parsed</param>
 
-        public CommandResponse(string msg, ResponseLevel level = ResponseLevel.Public, Menu menu = null, ParseMode parseMode = ParseMode.Default, string imgUrl = null)
+        public CommandResponse(string msg = null, ResponseLevel level = ResponseLevel.Public, Menu menu = null, ParseMode parseMode = ParseMode.Default, string imgUrl = null, string callbackCaption = null)
         {
             Text = msg;
             Level = level;
             Menu = menu;
             ParseMode = parseMode;
             ImageUrl = imgUrl;
+            CallbackCaption = callbackCaption;
         }
     }
 

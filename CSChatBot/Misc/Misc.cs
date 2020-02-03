@@ -14,6 +14,7 @@ using Telegram.Bot.Types.Enums;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using Telegram.Bot.Types.InlineQueryResults;
 // ReSharper disable InconsistentNaming
 #pragma warning disable IDE1006 // Naming Styles
 namespace Misc
@@ -27,42 +28,52 @@ namespace Misc
         public Misc(Instance db, Setting settings, TelegramBotClient bot)
         {
             RandoFactGenerator.Init();
-            settings.AddField(db, "ClarifaiAppId");
-            var ClarifaiAppId = settings.GetString(db, "ClarifaiAppId");
+            settings.AddField(db, "ClarifaiToken");
+            var ClarifaiAppId = settings.GetString(db, "ClarifaiToken");
             var r = new Random();
             if (String.IsNullOrWhiteSpace(ClarifaiAppId))
             {
                 //now ask for the API Key
                 Console.Clear();
-                Console.Write("What is your Clarifai App Id? : ");
+                Console.Write("What is your Clarifai Token? : ");
                 ClarifaiAppId = Console.ReadLine();
-                settings.SetString(db, "ClarifaiAppId", ClarifaiAppId);
+                settings.SetString(db, "ClarifaiToken", ClarifaiAppId);
             }
             if (String.IsNullOrEmpty(ClarifaiAppId)) return;
 
-            settings.AddField(db, "ClarifaiAppSecret");
-            var ClarifaiAppSecret = settings.GetString(db, "ClarifaiAppSecret");
-            if (String.IsNullOrWhiteSpace(ClarifaiAppSecret))
-            {
-                //now ask for the API Key
-                Console.Clear();
-                Console.Write("What is your Clarifai App Secret? : ");
-                ClarifaiAppSecret = Console.ReadLine();
-                settings.SetString(db, "ClarifaiAppSecret", ClarifaiAppSecret);
-            }
-            if (String.IsNullOrEmpty(ClarifaiAppSecret)) return;
+            //settings.AddField(db, "ClarifaiAppSecret");
+            //var ClarifaiAppSecret = settings.GetString(db, "ClarifaiAppSecret");
+            //if (String.IsNullOrWhiteSpace(ClarifaiAppSecret))
+            //{
+            //    //now ask for the API Key
+            //    Console.Clear();
+            //    Console.Write("What is your Clarifai App Secret? : ");
+            //    ClarifaiAppSecret = Console.ReadLine();
+            //    settings.SetString(db, "ClarifaiAppSecret", ClarifaiAppSecret);
+            //}
+            //if (String.IsNullOrEmpty(ClarifaiAppSecret)) return;
 
             bot.OnUpdate += (sender, args) =>
             {
                 try
                 {
+                    if (!(args.Update.Message?.Date > DateTime.UtcNow.AddSeconds(-15)))
+                    {
+                        //Log.WriteLine("Ignoring message due to old age: " + update.Message.Date);
+                        return;
+                    }
                     if (args.Update?.Message?.Type == MessageType.Photo)
                     {
+                        var bannsfw = false;
+                        var warnnsfw = false;
+                        var g = db.GetGroupById(args.Update.Message.Chat.Id);
                         if (args.Update.Message.Chat.Type != ChatType.Private)
                         {
-                            var g = db.GetGroupById(args.Update.Message.Chat.Id);
+                            
                             var nsfw = g.GetSetting<bool>("NSFW", db, false);
-                            if (!nsfw) return;
+                            bannsfw = g.GetSetting<bool>("BANNSFW", db, false);
+                            warnnsfw = g.GetSetting<bool>("WARNNSFW", db, false);
+                            if (!nsfw & !bannsfw & !warnnsfw) return;
                         }
                         new Task(() =>
                         {
@@ -70,11 +81,14 @@ namespace Misc
                             var pathing = bot.GetFileAsync(photo.FileId).Result;
                             var url =
                                 $"https://api.telegram.org/file/bot{settings.TelegramBotAPIKey}/{pathing.FilePath}";
-                            var nsfw = GetIsNude(url, ClarifaiAppId, ClarifaiAppSecret);
+                            var nsfw = GetIsNude(url, ClarifaiAppId);
+                            Console.WriteLine($"Image NSFW: {nsfw}%");
                             if (nsfw > 70)
                             {
-                                var responses = new[]
-                                 {
+                                if (!bannsfw & !warnnsfw)
+                                {
+                                    var responses = new[]
+                                     {
                                     "rrrrf",
                                     "Hot!",
                                     "OMAI",
@@ -84,8 +98,37 @@ namespace Misc
                                     "Yes, I'll take one, to go..  to my room...",
                                     "Keep em cumming...",
                                 };
-                                bot.SendTextMessageAsync(args.Update.Message.Chat.Id,
-                                    responses[r.Next(responses.Length)], replyToMessageId: args.Update.Message.MessageId);
+                                    bot.SendTextMessageAsync(args.Update.Message.Chat.Id,
+                                        responses[r.Next(responses.Length)], replyToMessageId: args.Update.Message.MessageId);
+                                }
+                                else
+                                {
+                                    
+                                    var chat = g.GetSetting<string>("NSFWLogChat", db, null);
+                                    if (chat != null)
+                                    {
+                                        try
+                                        {
+                                            var result = bot.ForwardMessageAsync(chat, args.Update.Message.Chat.Id, args.Update.Message.MessageId).Result;
+                                        }
+                                        catch(Exception e)
+                                        {
+                                            while (e.InnerException != null)
+                                                e = e.InnerException;
+                                            bot.SendTextMessageAsync(args.Update.Message.Chat.Id, e.Message + ": " + chat);
+                                        }
+                                    }
+                                    if (bannsfw)
+                                    {
+                                        //ban the user
+                                        bot.KickChatMemberAsync(args.Update.Message.Chat.Id, args.Update.Message.From.Id);
+                                    }
+                                    else if (warnnsfw)
+                                    {
+                                        bot.SendTextMessageAsync(args.Update.Message.Chat.Id, "This is a SFW channel.  Please do not post such images here.");
+                                    }
+                                    bot.DeleteMessageAsync(args.Update.Message.Chat.Id, args.Update.Message.MessageId);
+                                }
 
                                 //download it
                                 Directory.CreateDirectory("nsfw");
@@ -102,10 +145,20 @@ namespace Misc
             };
         }
 
-        [ChatCommand(Triggers =new[] { "randofact"}, HelpText ="Generates a random \"fact\"")]
+        [ChatCommand(Triggers = new[] { "randofact" }, HelpText = "Generates a random \"fact\"")]
         public static CommandResponse RandoFact(CommandEventArgs e)
         {
             return new CommandResponse(RandoFactGenerator.Get());
+        }
+
+         private static Stream GetStreamFromUrl(string url)
+        {
+            byte[] imageData = null;
+
+            using (var wc = new System.Net.WebClient())
+                imageData = wc.DownloadData(url);
+
+            return new MemoryStream(imageData);
         }
 
         [ChatCommand(Triggers = new[] { "togglensfw" }, GroupAdminOnly = true, HelpText = "Toggle NSFW image detection for the group")]
@@ -117,14 +170,60 @@ namespace Misc
             return new CommandResponse("NSFW: " + nsfw);
         }
 
+        [ChatCommand(Triggers = new[] { "warnnsfw" }, GroupAdminOnly = true, HelpText = "Warn NSFW posts in the channel")]
+        public static CommandResponse WarnNSFW(CommandEventArgs args)
+        {
+            var g = args.DatabaseInstance.GetGroupById(args.Message.Chat.Id);
+            var nsfw = !g.GetSetting<bool>("WARNNSFW", args.DatabaseInstance, false);
+            g.SetSetting<bool>("WARNNSFW", args.DatabaseInstance, false, nsfw);
+            var chat = g.GetSetting<string>("NSFWLogChat", args.DatabaseInstance, null);
+            if (chat == null)
+            {
+                args.Bot.SendTextMessageAsync(args.Message.Chat.Id, "You also can set a chat to log images detected using /setnsfwlog <chatid>");
+            }
+            return new CommandResponse("Warn NSFW: " + nsfw);
+        }
+
+        [ChatCommand(Triggers = new[] { "bannsfw" }, GroupAdminOnly = true, HelpText = "Ban NSFW posts from the channel")]
+        public static CommandResponse BanNSFW(CommandEventArgs args)
+        {
+            var g = args.DatabaseInstance.GetGroupById(args.Message.Chat.Id);
+            var nsfw = !g.GetSetting<bool>("BANNSFW", args.DatabaseInstance, false);
+            g.SetSetting<bool>("BANNSFW", args.DatabaseInstance, false, nsfw);
+            var chat = g.GetSetting<string>("NSFWLogChat", args.DatabaseInstance, null);
+            if (chat == null)
+            {
+                args.Bot.SendTextMessageAsync(args.Message.Chat.Id, "You also can set a chat to log images detected using /setnsfwlog <chatid>");
+            }
+            return new CommandResponse("Ban NSFW: " + nsfw);
+        }
+
+        [ChatCommand(Triggers = new[] { "setnsfwlog" }, GroupAdminOnly = true, HelpText = "Ban NSFW posts from the channel")]
+        public static CommandResponse SetNSFWLog(CommandEventArgs args)
+        {
+            var split = args.Message.Text.Split(' ');
+            if (split.Length == 1)
+            {
+                return new CommandResponse("You need to supply a group id: /setnsfwlog <chatid>");
+            }
+            if (!long.TryParse(split[1], out long chatId))
+            {
+                return new CommandResponse("You need to supply a group id: /setnsfwlog <chatid>");
+            }
+            var g = args.DatabaseInstance.GetGroupById(args.Message.Chat.Id);
+
+            g.SetSetting<string>("NSFWLogChat", args.DatabaseInstance, null, chatId.ToString());
+            return new CommandResponse("Logging NSFW images to: " + chatId);
+        }
+
         /// <summary>
         /// Gets the chance that an image is NSFW / Nude
         /// </summary>
         /// <param name="url">The url of the image</param>
         /// <returns>Percentage chance that the image is NSFW</returns>
-        private int GetIsNude(string url, string appid, string secret)
+        private int GetIsNude(string url, string token)
         {
-            var token = GetClarifaiToken(appid, secret);
+            //var token = GetClarifaiToken(appid, secret);
             try
             {
                 using (var wc = new WebClient())
@@ -133,18 +232,20 @@ namespace Misc
                     try
                     {
                         wc.Headers[HttpRequestHeader.ContentType] = "application/json";
-                        wc.Headers.Add("Authorization", $"Bearer {token}");
+                        wc.Headers.Add("Authorization", $"Key {token}");
                         response = wc.UploadString($"https://api.clarifai.com/v2/models/e9576d86d2004ed1a38ba0cf39ecb4b1/outputs", "POST", JsonConvert.SerializeObject(new ClarifaiInputs(url)));
+                        var result = JsonConvert.DeserializeObject<ClarifaiOutput>(response);
+                        return (int)(result.outputs[0].data.concepts.First(x => x.name == "nsfw").value * 100);
                     }
                     catch
                     {
-                        token = GetClarifaiToken(appid, secret, true);
-                        wc.Headers[HttpRequestHeader.ContentType] = "application/json";
-                        wc.Headers.Add("Authorization", $"Bearer {token}");
-                        response = wc.UploadString($"https://api.clarifai.com/v2/models/e9576d86d2004ed1a38ba0cf39ecb4b1/outputs", "POST", JsonConvert.SerializeObject(new ClarifaiInputs(url)));
+                        //token = GetClarifaiToken(appid, secret, true);
+                        //wc.Headers[HttpRequestHeader.ContentType] = "application/json";
+                        //wc.Headers.Add("Authorization", $"Bearer {secret}");
+                        //response = wc.UploadString($"https://api.clarifai.com/v2/models/e9576d86d2004ed1a38ba0cf39ecb4b1/outputs", "POST", JsonConvert.SerializeObject(new ClarifaiInputs(url)));
+                        return 0;
                     }
-                    var result = JsonConvert.DeserializeObject<ClarifaiOutput>(response);
-                    return (int)(result.outputs[0].data.concepts.First(x => x.name == "nsfw").value * 100);
+
                 }
             }
             catch
@@ -186,7 +287,7 @@ namespace Misc
             //return message
             return new CommandResponse(result.conclusion, parseMode: ParseMode.Html);
         }
-        
+
         static ThinkResult GetResult(string query)
         {
             using (var wc = new WebClient())
