@@ -15,6 +15,7 @@ using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using Telegram.Bot.Types.InlineQueryResults;
+using Misc.Models;
 // ReSharper disable InconsistentNaming
 #pragma warning disable IDE1006 // Naming Styles
 namespace Misc
@@ -149,6 +150,29 @@ namespace Misc
         public static CommandResponse RandoFact(CommandEventArgs e)
         {
             return new CommandResponse(RandoFactGenerator.Get());
+        }
+
+        [ChatCommand(Triggers = new[] { "covid" }, HelpText = "Get covid stats")]
+        public static CommandResponse Covid(CommandEventArgs e)
+        {
+            var data = CovidData.LoadData();
+            CountryStats c = null;
+            if (!String.IsNullOrWhiteSpace(e.Parameters))
+            {
+                c = data.FirstOrDefault(x => x.Country.ToLower().StartsWith(e.Parameters.ToLower()));
+            }
+            if (c == null)
+                c = data.FirstOrDefault(x => x.Country.StartsWith("Global"));
+
+            return new CommandResponse($"{c.Country}:\n{c.TotalCases:n0} Total\n" +
+                $"{c.NewCases:n0} New cases\n" +
+                $"{c.TotalDeaths:n0} Total deaths\n" +
+                $"{c.NewDeaths:n0} New deaths\n" +
+                $"{c.TotalRecovered:n0} Total recovered\n" +
+                $"{c.ActiveCases:n0} Active cases\n" +
+                $"{c.SeriousCases:n0} Serious cases\n" +
+                $"{c.TotalCasesPerMillion:n0} Total cases / 1M pop\n" +
+                $"{((double)c.TotalDeaths * 100 / (double)(c.TotalDeaths + c.TotalRecovered)):n2}% Estimated mortality rate");
         }
 
 
