@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -37,6 +38,7 @@ namespace CSChatBot
 
         static void Main(string[] args)
         {
+            System.Net.ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
             Console.OutputEncoding = Encoding.UTF8;
             Messenger.MessageSent += MessengerOnMessageSent;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;

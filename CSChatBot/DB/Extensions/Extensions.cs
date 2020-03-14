@@ -425,8 +425,8 @@ namespace DB.Extensions
                 return sourceUser;
             }
             //check for a user mention
-            var mention = message?.Entities.FirstOrDefault(x => x.Type == MessageEntityType.Mention);
-            var textmention = message?.Entities.FirstOrDefault(x => x.Type == MessageEntityType.TextMention);
+            var mention = message?.Entities?.FirstOrDefault(x => x.Type == MessageEntityType.Mention);
+            var textmention = message?.Entities?.FirstOrDefault(x => x.Type == MessageEntityType.TextMention);
             var id = 0;
             var username = "";
             if (mention != null)

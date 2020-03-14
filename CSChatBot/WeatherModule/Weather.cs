@@ -62,6 +62,14 @@ namespace WeatherModule
             var loc = args.Parameters;
             if (String.IsNullOrEmpty(loc))
             {
+                //check for location reply
+                var locationObject = args.Message?.ReplyToMessage?.Location;
+                if (locationObject != null)
+                {
+                    loc = $"{locationObject.Latitude},{locationObject.Longitude}";
+                    return fknweather ? GetFknWeather(loc) : GetWeather(loc);
+
+                }
                 return (fknweather ? GetFknWeather(args.SourceUser.Location) : GetWeather(args.SourceUser.Location)) ?? new CommandResponse("Please use !setloc <location> to set your default location, or enter a location as a parameter");
             }
             var target = args.Message.GetTarget(args.Parameters, args.SourceUser, args.DatabaseInstance);
@@ -337,92 +345,92 @@ namespace WeatherModule
     //    public string latitude = "";
     //    public string longitude = "";
     //    public string icon_url;
-    }
+}
 
-    [Serializable]
-    public class FknWeatherResponse
+[Serializable]
+public class FknWeatherResponse
+{
+    public string location { get; set; }
+    public string readableLocation { get; set; }
+    public Temperature temperature { get; set; }
+    public string remark { get; set; }
+    public string flavor { get; set; }
+    public Forecast forecast { get; set; }
+
+    public class Temperature
     {
-        public string location { get; set; }
-        public string readableLocation { get; set; }
-        public Temperature temperature { get; set; }
-        public string remark { get; set; }
-        public string flavor { get; set; }
-        public Forecast forecast { get; set; }
-
-        public class Temperature
-        {
-            public int c { get; set; }
-            public int f { get; set; }
-        }
-
-        public class Sun
-        {
-            public Temperature high { get; set; }
-            public Temperature low { get; set; }
-            public string forecast { get; set; }
-        }
-
-        public class Mon
-        {
-            public Temperature high { get; set; }
-            public Temperature low { get; set; }
-            public string forecast { get; set; }
-        }
-
-        public class Tues
-        {
-            public Temperature high { get; set; }
-            public Temperature low { get; set; }
-            public string forecast { get; set; }
-        }
-
-        public class Wed
-        {
-            public Temperature high { get; set; }
-            public Temperature low { get; set; }
-            public string forecast { get; set; }
-        }
-
-        public class Thur
-        {
-            public Temperature high { get; set; }
-            public Temperature low { get; set; }
-            public string forecast { get; set; }
-        }
-
-        public class Fri
-        {
-            public Temperature high { get; set; }
-            public Temperature low { get; set; }
-            public string forecast { get; set; }
-        }
-
-
-        public class Sat
-        {
-            public Temperature high { get; set; }
-            public Temperature low { get; set; }
-            public string forecast { get; set; }
-        }
-
-        public class Day
-        {
-            public Temperature high { get; set; }
-            public Temperature low { get; set; }
-            public string forecast { get; set; }
-        }
-
-        public class Forecast
-        {
-            public Day Sun { get; set; }
-            public Day Mon { get; set; }
-            public Day Tues { get; set; }
-            public Day Wed { get; set; }
-            public Day Thur { get; set; }
-            public Day Fri { get; set; }
-            public Day Sat { get; set; }
-
-        }
+        public int c { get; set; }
+        public int f { get; set; }
     }
+
+    public class Sun
+    {
+        public Temperature high { get; set; }
+        public Temperature low { get; set; }
+        public string forecast { get; set; }
+    }
+
+    public class Mon
+    {
+        public Temperature high { get; set; }
+        public Temperature low { get; set; }
+        public string forecast { get; set; }
+    }
+
+    public class Tues
+    {
+        public Temperature high { get; set; }
+        public Temperature low { get; set; }
+        public string forecast { get; set; }
+    }
+
+    public class Wed
+    {
+        public Temperature high { get; set; }
+        public Temperature low { get; set; }
+        public string forecast { get; set; }
+    }
+
+    public class Thur
+    {
+        public Temperature high { get; set; }
+        public Temperature low { get; set; }
+        public string forecast { get; set; }
+    }
+
+    public class Fri
+    {
+        public Temperature high { get; set; }
+        public Temperature low { get; set; }
+        public string forecast { get; set; }
+    }
+
+
+    public class Sat
+    {
+        public Temperature high { get; set; }
+        public Temperature low { get; set; }
+        public string forecast { get; set; }
+    }
+
+    public class Day
+    {
+        public Temperature high { get; set; }
+        public Temperature low { get; set; }
+        public string forecast { get; set; }
+    }
+
+    public class Forecast
+    {
+        public Day Sun { get; set; }
+        public Day Mon { get; set; }
+        public Day Tues { get; set; }
+        public Day Wed { get; set; }
+        public Day Thur { get; set; }
+        public Day Fri { get; set; }
+        public Day Sat { get; set; }
+
+    }
+}
 
 

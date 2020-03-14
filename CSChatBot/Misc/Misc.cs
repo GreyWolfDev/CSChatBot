@@ -151,7 +151,9 @@ namespace Misc
             return new CommandResponse(RandoFactGenerator.Get());
         }
 
-         private static Stream GetStreamFromUrl(string url)
+
+
+        private static Stream GetStreamFromUrl(string url)
         {
             byte[] imageData = null;
 
