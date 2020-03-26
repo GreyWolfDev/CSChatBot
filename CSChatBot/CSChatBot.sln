@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Seras Webpage", "Seras Webp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Giveaway", "Giveaway\Giveaway.csproj", "{239D9F05-9A9F-44BD-9207-2B0F3C241856}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIMLChat", "SIMLChat\SIMLChat.csproj", "{F560C61F-4765-4114-BAA4-71BD9A8573F7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,6 +101,10 @@ Global
 		{239D9F05-9A9F-44BD-9207-2B0F3C241856}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{239D9F05-9A9F-44BD-9207-2B0F3C241856}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{239D9F05-9A9F-44BD-9207-2B0F3C241856}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F560C61F-4765-4114-BAA4-71BD9A8573F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F560C61F-4765-4114-BAA4-71BD9A8573F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F560C61F-4765-4114-BAA4-71BD9A8573F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F560C61F-4765-4114-BAA4-71BD9A8573F7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

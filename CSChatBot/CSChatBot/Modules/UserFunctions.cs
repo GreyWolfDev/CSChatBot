@@ -51,13 +51,14 @@ namespace CSChatBot.Modules
         [ChatCommand(Triggers = new[] { "last" }, HelpText = "Gets when a user was last seen, and where", Parameters = new[] { "none - yourself", "<userid>", "<@username>", "as a reply" })]
         public static CommandResponse GetLastSeen(CommandEventArgs args)
         {
-            var target = UserHelper.GetTarget(args);
-            string length = null;
-            if (target != null)
-                length = LengthAgo(target.LastHeard);
-            return new CommandResponse(target == null
-                ? $"{args.Parameters} not found!"
-                : $"{target.Name} was last seen (by me) {target.LastState} {(length == null ? "just now" : length + " ago")} ({target.LastHeard})");
+            //var target = UserHelper.GetTarget(args);
+            //string length = null;
+            //if (target != null)
+            //    length = LengthAgo(target.LastHeard);
+            //return new CommandResponse(target == null
+            //    ? $"{args.Parameters} not found!"
+            //    : $"{target.Name} was last seen (by me) {target.LastState} {(length == null ? "just now" : length + " ago")} ({target.LastHeard})");
+            return new CommandResponse("This command has been disabled because it's super creepy.... piss off!");
         }
 
         [ChatCommand(Triggers = new[] { "top" }, HelpText = "Shows a list of users with the highest points")]

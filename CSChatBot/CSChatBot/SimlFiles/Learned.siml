@@ -1,0 +1,16 @@
+﻿<Siml>
+  <Concept Name="Learning new Models" Type="Public">
+    <Model>
+      <Pattern>A * IS A *</Pattern>
+      <Response>
+        <Learn>
+          <Model>
+            <Pattern>What is a <Process><Match /></Process></Pattern>
+            <Response>It's a <Process><Match Index="2" /></Process></Response>
+          </Model>
+        </Learn>
+         Alright I will keep that in mind.
+        </Response>
+    </Model>
+  </Concept>
+</Siml>

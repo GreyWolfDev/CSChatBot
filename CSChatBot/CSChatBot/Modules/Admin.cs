@@ -15,6 +15,7 @@ using System.Diagnostics;
 using Telegram.Bot.Types.Enums;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Net.Http;
 
 namespace CSChatBot.Modules
 {
@@ -24,6 +25,18 @@ namespace CSChatBot.Modules
         public Admin(Instance instance, Setting setting, TelegramBotClient bot)
         {
 
+        }
+
+        [ChatCommand(Triggers = new[] { "clearww" }, BotAdminOnly = true, DontSearchInline = true, HideFromInline = true)]
+        public static CommandResponse ClearWW(CommandEventArgs args)
+        {
+            var apiKey = Program.LoadedSetting.WWApiKey;
+            using (var client = new HttpClient())
+            {
+
+                client.GetStringAsync($"https://api.telegram.org/bot{apiKey}/getUpdates?offset=-1").Wait();
+            }
+            return new CommandResponse($"Queue has been cleared");
         }
 
         [ChatCommand(Triggers = new[] { "ground", "finishhim!", "kthxbai" }, BotAdminOnly = true, HelpText = "Stops a user from using the bot")]
@@ -172,7 +185,8 @@ namespace CSChatBot.Modules
                     {
                         "mscorlib.dll", "System.Core.dll", "System.dll", "System.Data.dll", "Telegram.Bot.dll",
                         "Newtonsoft.Json.dll", "System.Net.Http.dll"
-                    }, Path.Combine(Program.RootDirectory, "foo.exe"), true) {GenerateExecutable = true};
+                    }, Path.Combine(Program.RootDirectory, "foo.exe"), true)
+                { GenerateExecutable = true };
                 CompilerResults results = csc.CompileAssemblyFromSource(parameters, code);
                 var result = new StringBuilder();
                 if (results.Errors.HasErrors)

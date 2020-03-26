@@ -24,5 +24,7 @@ namespace DB.Models
         /// Your Telegram Bot API Token
         /// </summary>
         public string TelegramBotAPIKey { get; set; }
+
+        public string WWApiKey { get; set; }
     }
 }

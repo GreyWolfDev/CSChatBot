@@ -59,7 +59,7 @@ namespace DB
             Log.WriteLine("Creating settings table...");
             new SQLiteCommand(
                 @"create table settings (ID INTEGER PRIMARY KEY AUTOINCREMENT, 
-                    Alias TEXT UNIQUE NOT NULL, TelegramBotAPIKey TEXT, TelegramDefaultAdminUserId TEXT)", Connection)
+                    Alias TEXT UNIQUE NOT NULL, TelegramBotAPIKey TEXT, TelegramDefaultAdminUserId TEXT, WWApiKey TEXT)", Connection)
                 .ExecuteNonQuery();
             Log.WriteLine("Settings table created successfully");
 

@@ -113,6 +113,7 @@ namespace ModuleFramework
         public string ImageCaption { get; set; }
         public string ImageDescription { get; set; }
         public string CallbackCaption { get; set; }
+        public bool PreviewHtml { get; set; }
         public bool Edit { get; set; } = true;
         /// <summary>
         /// Sends a response through the bot
@@ -122,7 +123,7 @@ namespace ModuleFramework
         /// <param name="replyMarkup">Reply markup.  Optional</param>
         /// <param name="parseMode">How the text should be parsed</param>
 
-        public CommandResponse(string msg = null, ResponseLevel level = ResponseLevel.Public, Menu menu = null, ParseMode parseMode = ParseMode.Default, string imgUrl = null, string callbackCaption = null)
+        public CommandResponse(string msg = null, ResponseLevel level = ResponseLevel.Public, Menu menu = null, ParseMode parseMode = ParseMode.Default, string imgUrl = null, string callbackCaption = null, bool previewHtml = true)
         {
             Text = msg;
             Level = level;
@@ -130,6 +131,7 @@ namespace ModuleFramework
             ParseMode = parseMode;
             ImageUrl = imgUrl;
             CallbackCaption = callbackCaption;
+            PreviewHtml = previewHtml;
         }
     }
 

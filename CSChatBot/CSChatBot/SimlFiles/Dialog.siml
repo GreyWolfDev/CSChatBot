@@ -1,0 +1,194 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Siml>
+  <Concept Name="Dialog">
+    
+    <Model>
+      <Pattern>DIALOG HISTORY *</Pattern>
+      <Response>
+        <Think>
+          <User Set="input4">
+            <Input At="4" />
+          </User>
+          <User Set="input3">
+            <Input At="3" />
+          </User>
+          <User Set="input2">
+            <Input At="2" />
+          </User>
+          <User Set="input1">
+            <Input />
+          </User>
+        </Think>
+        <If User="input4" Defined="True">
+          <br />
+          <b>
+            <em>Human: <Input At="4" /></em>
+          </b>
+          <br />
+          <b>
+            <Match />: <em><Result At="4" /></em></b>
+        </If>
+        <If User="input3" Defined="True">
+          <br />
+          <b>
+            <em>Human: <Input At="3" /></em>
+          </b>
+          <br />
+          <b>
+            <Match />: <em><Result At="3" /></em></b>
+        </If>
+        <If User="input2" Defined="True">
+          <br />
+          <b>
+            <em>Human: <Input At="2" /></em>
+          </b>
+          <br />
+          <b>
+            <Match />: <em><Result At="2" /></em></b>
+        </If>
+        <If User="input1" Defined="True">
+          <br />
+          <b>
+            <em>Human: <Input /></em>
+          </b>
+          <br />
+          <b>
+            <Match />: <em><Result /></em></b>
+        </If>
+      </Response>
+    </Model>
+    
+    <Model>
+      <Pattern>DIALOG HISTORY</Pattern>
+      <Response>
+        <Think>
+          <User Set="input4">
+            <Input At="4" />
+          </User>
+          <User Set="input3">
+            <Input At="3" />
+          </User>
+          <User Set="input2">
+            <Input At="2" />
+          </User>
+          <User Set="input1">
+            <Input />
+          </User>
+        </Think>
+        <If User="input4" Defined="True">
+          <br />
+          <b>
+            <em>Human: <Input At="4" /></em>
+          </b>
+          <br />
+          <b>
+            <Bot Get="name" />: <em><Result At="4" /></em></b>
+        </If>
+        <If User="input3" Defined="True">
+          <br />
+          <b>
+            <em>Human: <Input At="3" /></em>
+          </b>
+          <br />
+          <b>
+            <Bot Get="name" />: <em><Result At="3" /></em></b>
+        </If>
+        <If User="input2" Defined="True">
+          <br />
+          <b>
+            <em>Human: <Input At="2" /></em>
+          </b>
+          <br />
+          <b>
+            <Bot Get="name" />: <em><Result At="2" /></em></b>
+        </If>
+        <If User="input1" Defined="True">
+          <br />
+          <b>
+            <em>Human: <Input /></em>
+          </b>
+          <br />
+          <b>
+            <Bot Get="name" />: <em><Result /></em></b>
+        </If>
+      </Response>
+    </Model>
+    
+    <Model>
+      <Pattern>REVIEW OUR CONVERSATION</Pattern>
+      <Response>
+        <Think>
+          <User Set="input4">
+            <Input At="4" />
+          </User>
+          <User Set="input3">
+            <Input At="3" />
+          </User>
+          <User Set="input2">
+            <Input At="2" />
+          </User>
+          <User Set="input1">
+            <Input />
+          </User>
+        </Think>
+        <If User="input4" Defined="True">
+          <br />You said, "<Input At="4" />".  I replied,"<Result At="3" />"</If>
+        <If User="input3" Defined="True">
+          <br />You said, "<Input At="3" />".  I replied,"<Result At="2" />"</If>
+        <If User="input2" Defined="True">
+          <br />You said, "<Input At="2" />".  I replied,"<Result />"</If>
+        <br />
+      </Response>
+    </Model>
+    
+    <Model>
+      <Pattern>DIALOGUE</Pattern>
+      <Response>
+        <Goto>REVIEW OUR CONVERSATION</Goto>
+      </Response>
+    </Model>
+    
+    <Model>
+      <Pattern>DO YOU REMEMBER OUR CONVERSATION</Pattern>
+      <Response>
+        <Goto>REVIEW OUR CONVERSATION</Goto>
+      </Response>
+    </Model>
+    
+    <Model>
+      <Pattern>DO YOU * OUR CONVERSATION</Pattern>
+      <Response>
+        <Goto>REVIEW OUR CONVERSATION</Goto>
+      </Response>
+    </Model>
+    
+    <Model>
+      <Pattern>DO YOU REMEMBER * CONVERSATION</Pattern>
+      <Response>
+        <Goto>REVIEW OUR CONVERSATION</Goto>
+      </Response>
+    </Model>
+    
+    <Model>
+      <Pattern>CAN YOU REMEMBER OUR CONVERSATION</Pattern>
+      <Response>
+        <Goto>REVIEW OUR CONVERSATION</Goto>
+      </Response>
+    </Model>
+    
+    <Model>
+      <Pattern>CAN YOU * OUR CONVERSATION</Pattern>
+      <Response>
+        <Goto>REVIEW OUR CONVERSATION</Goto>
+      </Response>
+    </Model>
+    
+    <Model>
+      <Pattern>CAN YOU REMEMBER * CONVERSATION</Pattern>
+      <Response>
+        <Goto>REVIEW OUR CONVERSATION</Goto>
+      </Response>
+    </Model>
+    
+  </Concept>
+</Siml>

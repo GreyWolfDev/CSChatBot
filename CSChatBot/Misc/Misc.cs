@@ -16,6 +16,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using Telegram.Bot.Types.InlineQueryResults;
 using Misc.Models;
+using Misc.Interfaces;
 // ReSharper disable InconsistentNaming
 #pragma warning disable IDE1006 // Naming Styles
 namespace Misc
@@ -70,7 +71,7 @@ namespace Misc
                         var g = db.GetGroupById(args.Update.Message.Chat.Id);
                         if (args.Update.Message.Chat.Type != ChatType.Private)
                         {
-                            
+
                             var nsfw = g.GetSetting<bool>("NSFW", db, false);
                             bannsfw = g.GetSetting<bool>("BANNSFW", db, false);
                             warnnsfw = g.GetSetting<bool>("WARNNSFW", db, false);
@@ -104,7 +105,7 @@ namespace Misc
                                 }
                                 else
                                 {
-                                    
+
                                     var chat = g.GetSetting<string>("NSFWLogChat", db, null);
                                     if (chat != null)
                                     {
@@ -112,7 +113,7 @@ namespace Misc
                                         {
                                             var result = bot.ForwardMessageAsync(chat, args.Update.Message.Chat.Id, args.Update.Message.MessageId).Result;
                                         }
-                                        catch(Exception e)
+                                        catch (Exception e)
                                         {
                                             while (e.InnerException != null)
                                                 e = e.InnerException;
@@ -152,28 +153,74 @@ namespace Misc
             return new CommandResponse(RandoFactGenerator.Get());
         }
 
-        [ChatCommand(Triggers = new[] { "covid" }, HelpText = "Get covid stats")]
+        public static ICovidDataLoader Loader = new WorldoMeterDataLoader();
+
+
+        [ChatCommand(Triggers = new[] { "covid" }, HelpText = "Get covid stats.  Add a country or state on the end to filter", Parameters = new[] { "[country] | [state] | null" })]
         public static CommandResponse Covid(CommandEventArgs e)
         {
-            var data = CovidData.LoadData();
-            CountryStats c = null;
+            //var data = CovidData.LoadData();
+            //CountryStats c = null;
+            //if (!String.IsNullOrWhiteSpace(e.Parameters))
+            //{
+            //    c = data.FirstOrDefault(x => x.Country.ToLower().StartsWith(e.Parameters.ToLower()));
+            //}
+            //if (c == null)
+            //    c = data.FirstOrDefault(x => x.Country.StartsWith("Global"));
+
+            //return new CommandResponse($"{c.Country}:\n{c.TotalCases:n0} Total\n" +
+            //    $"{c.NewCases:n0} New cases\n" +
+            //    $"{c.TotalDeaths:n0} Total deaths\n" +
+            //    $"{c.NewDeaths:n0} New deaths\n" +
+            //    $"{c.TotalRecovered:n0} Total recovered\n" +
+            //    $"{c.ActiveCases:n0} Active cases\n" +
+            //    $"{c.SeriousCases:n0} Serious cases\n" +
+            //    $"{c.TotalCasesPerMillion:n0} Total cases / 1M pop\n" +
+            //    $"{((double)c.TotalDeaths * 100 / (double)(c.TotalDeaths + c.TotalRecovered)):n2}% Estimated mortality rate");
+
+            RegionData c = null;
             if (!String.IsNullOrWhiteSpace(e.Parameters))
             {
-                c = data.FirstOrDefault(x => x.Country.ToLower().StartsWith(e.Parameters.ToLower()));
+                c = Loader.GetStats(e.Parameters);
             }
             if (c == null)
-                c = data.FirstOrDefault(x => x.Country.StartsWith("Global"));
+                c = Loader.GetStats("Global");
 
-            return new CommandResponse($"{c.Country}:\n{c.TotalCases:n0} Total\n" +
-                $"{c.NewCases:n0} New cases\n" +
-                $"{c.TotalDeaths:n0} Total deaths\n" +
-                $"{c.NewDeaths:n0} New deaths\n" +
-                $"{c.TotalRecovered:n0} Total recovered\n" +
-                $"{c.ActiveCases:n0} Active cases\n" +
-                $"{c.SeriousCases:n0} Serious cases\n" +
-                $"{c.TotalCasesPerMillion:n0} Total cases / 1M pop\n" +
-                $"{((double)c.TotalDeaths * 100 / (double)(c.TotalDeaths + c.TotalRecovered)):n2}% Estimated mortality rate");
+            var result = $"{c.Country}";
+            if (!String.IsNullOrWhiteSpace(c.State))
+                result += $" - {c.State}";
+
+            result += $":\n" +
+            $"*{c.TotalCases:n0}* Total\n" +
+                $"*{c.NewCases:n0}* New cases\n" +
+                $"*{c.TotalDeaths:n0}* Total deaths\n" +
+                $"*{c.NewDeaths:n0}* New deaths\n" +
+                $"*{c.TotalRecovered:n0}* Total recovered\n" +
+                $"*{c.ActiveCases:n0}* Active cases\n";
+            if (c.SeriousCases != -1)
+                result += $"*{c.SeriousCases:n0}* Serious cases\n";
+
+            if (c.TotalCasesPerMillion != 0)
+                result += $"*{c.TotalCasesPerMillion:n0}* Total cases / 1M pop ({c.TotalCasesPerMillion / 1000000:n6}%)\n";
+
+            result += $"\n\"New\" refers to any new cases since\nmidnight UTC ({(DateTime.UtcNow - DateTime.UtcNow.Date).Hours} hours ago)\n";
+            result += $"[Source]({c.Source})";
+            //if (c.Deaths > 10 && c.Recovered > 0)
+            //    result += $"{((double)c.Deaths * 100 / (double)(c.Deaths + c.Recovered)):n2}% Estimated mortality rate";
+            var location = c.Country;
+            if (c.State != null) location += " - " + c.State;
+            return new CommandResponse(result)
+            {
+                ImageUrl = "https://www.worldometers.info/img/worldometers-fb.jpg",
+                ImageDescription = location,
+                ImageTitle = "Covid 19 Stats",
+                ParseMode = ParseMode.Markdown,
+                PreviewHtml = false
+            };
         }
+
+       
+
 
 
 

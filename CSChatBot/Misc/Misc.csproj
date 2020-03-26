@@ -56,8 +56,12 @@
   <ItemGroup>
     <Compile Include="CovidData.cs" />
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Interfaces\ICovidDataLoader.cs" />
+    <Compile Include="Interfaces\JhuDataLoader.cs" />
+    <Compile Include="Interfaces\WorldoMeterDataLoader.cs" />
     <Compile Include="Misc.cs" />
     <Compile Include="Models\CountryStats.cs" />
+    <Compile Include="Models\CovidStat.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RandoFactGenerator.cs" />
   </ItemGroup>

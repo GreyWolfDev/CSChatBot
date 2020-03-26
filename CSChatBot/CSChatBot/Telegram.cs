@@ -41,7 +41,7 @@ namespace CSChatBot
             }
             catch(Exception e)
             {
-                Console.WriteLine(e.Message);
+                Console.WriteLine(e.Message + "\n" + e.StackTrace);
                 Log.WriteLine("502 bad gateway, restarting in 2 seconds", LogLevel.Error, fileName: "telegram.log");
                 Thread.Sleep(TimeSpan.FromSeconds(2));
                 //API is down... 
@@ -180,14 +180,14 @@ namespace CSChatBot
                             ReplyMarkup = CreateMarkupFromMenu(response.Menu),
                             Title = title,
                             Description = description,
-                            ThumbUrl = response.ImageUrl,
+                            ThumbUrl = response.ImageUrl,                         
                         });
                     }
                     else
                     {
                         results.Add(new InlineQueryResultArticle(Loader.Commands.ToList().IndexOf(c).ToString(), title, new InputTextMessageContent(response.Text)
                         {
-                            DisableWebPagePreview = false,
+                            DisableWebPagePreview = !response.PreviewHtml,
                             ParseMode = response.ParseMode
                         })
                         {
@@ -196,7 +196,7 @@ namespace CSChatBot
                             ThumbUrl = response.ImageUrl,
                             Url = response.ImageUrl,
                             HideUrl = true,
-                            ReplyMarkup = CreateMarkupFromMenu(response.Menu)
+                            ReplyMarkup = CreateMarkupFromMenu(response.Menu)                            
                         });
                     }
                 }
@@ -376,12 +376,13 @@ namespace CSChatBot
                 {
                     Bot.EditMessageTextAsync(targetId, update.MessageId, text,
                         replyMarkup: CreateMarkupFromMenu(response.Menu),
-                        parseMode: response.ParseMode);
+                        parseMode: response.ParseMode,
+                        disableWebPagePreview: !response.PreviewHtml);
                 }
                 else
                 {
                     Bot.SendTextMessageAsync(targetId, text, replyMarkup: CreateMarkupFromMenu(response.Menu),
-                        parseMode: response.ParseMode);
+                        parseMode: response.ParseMode, disableWebPagePreview: !response.PreviewHtml);
                 }
                 //Bot.SendTextMessage(update.Message.Chat.Id, text);
                 return;
